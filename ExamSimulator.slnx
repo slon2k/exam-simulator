@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ExamSimulator.Domain/ExamSimulator.Domain.csproj" />
+    <Project Path="src/ExamSimulator.Infrastructure/ExamSimulator.Infrastructure.csproj" />
+    <Project Path="src/ExamSimulator.Web/ExamSimulator.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ExamSimulator.Domain.UnitTests/ExamSimulator.Domain.UnitTests.csproj" />
+    <Project Path="tests/ExamSimulator.Web.FunctionalTests/ExamSimulator.Web.FunctionalTests.csproj" />
+  </Folder>
+</Solution>
