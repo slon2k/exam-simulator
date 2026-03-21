@@ -1,10 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <ItemGroup>
-    <ProjectReference Include="..\ExamSimulator.Domain\ExamSimulator.Domain.csproj" />
-    <ProjectReference Include="..\ExamSimulator.Infrastructure\ExamSimulator.Infrastructure.csproj" />
-  </ItemGroup>
-
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>

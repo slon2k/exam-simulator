@@ -1,6 +1,6 @@
-using ExamSimulator.Domain.Questions;
+using ExamSimulator.Web.Domain.Questions;
 
-namespace ExamSimulator.Domain.UnitTests.Questions;
+namespace ExamSimulator.Web.UnitTests.Questions;
 
 public class QuestionTests
 {
