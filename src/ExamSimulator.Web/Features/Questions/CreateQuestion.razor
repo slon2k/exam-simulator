@@ -1,0 +1,108 @@
+@page "/questions/create"
+@rendermode InteractiveServer
+
+@inject ExamSimulatorDbContext DbContext
+@inject NavigationManager Nav
+
+<PageTitle>Create Question</PageTitle>
+
+<h1>Create Question</h1>
+
+<EditForm Model="_model" OnValidSubmit="HandleSubmit" FormName="CreateQuestion">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label class="form-label">Exam Profile ID</label>
+        <InputText class="form-control" @bind-Value="_model.ExamProfileId" />
+        <ValidationMessage For="() => _model.ExamProfileId" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Prompt</label>
+        <InputTextArea class="form-control" rows="3" @bind-Value="_model.Prompt" />
+        <ValidationMessage For="() => _model.Prompt" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Topic Tag</label>
+        <InputText class="form-control" @bind-Value="_model.TopicTag" />
+        <ValidationMessage For="() => _model.TopicTag" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Options</label>
+        @for (int i = 0; i < _model.Options.Count; i++)
+        {
+            var index = i;
+            <div class="input-group mb-2">
+                <div class="input-group-text">
+                    <input type="radio" name="correctOption" checked="@(_model.CorrectOptionIndex == index)"
+                           @onchange="() => _model.CorrectOptionIndex = index"
+                           title="Mark as correct" />
+                </div>
+                <input type="text" class="form-control" value="@_model.Options[index]"
+                       @oninput="e => _model.Options[index] = e.Value?.ToString() ?? string.Empty"
+                       placeholder="Option @(index + 1)" />
+                @if (_model.Options.Count > 2)
+                {
+                    <button type="button" class="btn btn-outline-danger" @onclick="() => RemoveOption(index)">✕</button>
+                }
+            </div>
+        }
+        <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="AddOption">+ Add Option</button>
+    </div>
+
+    @if (_errorMessage is not null)
+    {
+        <div class="alert alert-danger">@_errorMessage</div>
+    }
+
+    <button type="submit" class="btn btn-primary">Save Question</button>
+    <a href="/questions" class="btn btn-secondary ms-2">Cancel</a>
+</EditForm>
+
+@code {
+    private readonly CreateQuestionModel _model = new();
+    private string? _errorMessage;
+
+    private void AddOption() => _model.Options.Add(string.Empty);
+
+    private void RemoveOption(int index)
+    {
+        _model.Options.RemoveAt(index);
+        if (_model.CorrectOptionIndex >= _model.Options.Count)
+            _model.CorrectOptionIndex = _model.Options.Count - 1;
+    }
+
+    private async Task HandleSubmit()
+    {
+        _errorMessage = null;
+        try
+        {
+            var question = new Question(
+                Guid.NewGuid(),
+                _model.ExamProfileId,
+                _model.Prompt,
+                _model.Options,
+                _model.CorrectOptionIndex,
+                _model.TopicTag);
+
+            DbContext.Questions.Add(question);
+            await DbContext.SaveChangesAsync();
+            Nav.NavigateTo("/questions");
+        }
+        catch (ArgumentException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+
+    private sealed class CreateQuestionModel
+    {
+        public string ExamProfileId { get; set; } = string.Empty;
+        public string Prompt { get; set; } = string.Empty;
+        public string TopicTag { get; set; } = string.Empty;
+        public List<string> Options { get; set; } = ["", "", "", ""];
+        public int CorrectOptionIndex { get; set; }
+    }
+}
