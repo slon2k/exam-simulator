@@ -1,4 +1,4 @@
-namespace ExamSimulator.Domain.Questions;
+namespace ExamSimulator.Web.Domain.Questions;
 
 public sealed class Question
 {
