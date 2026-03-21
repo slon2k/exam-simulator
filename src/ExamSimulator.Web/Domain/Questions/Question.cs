@@ -2,17 +2,19 @@ namespace ExamSimulator.Web.Domain.Questions;
 
 public sealed class Question
 {
-    public Guid Id { get; }
+    public Guid Id { get; private set; }
 
-    public string ExamProfileId { get; }
+    public string ExamProfileId { get; private set; } = null!;
 
-    public string Prompt { get; }
+    public string Prompt { get; private set; } = null!;
 
-    public IReadOnlyList<string> Options { get; }
+    public IReadOnlyList<string> Options { get; private set; } = null!;
 
-    public int CorrectOptionIndex { get; }
+    public int CorrectOptionIndex { get; private set; }
 
-    public string TopicTag { get; }
+    public string TopicTag { get; private set; } = null!;
+
+    private Question() { } // for EF Core
 
     public Question(
         Guid id,
