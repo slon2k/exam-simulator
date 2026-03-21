@@ -71,6 +71,7 @@ Steps:
 ### Phase 2: EF Core + SQLite Dev Setup
 
 **Depends on:** Phase 1.
+**Closes:** #9
 
 Steps:
 
@@ -134,6 +135,7 @@ Steps:
 |-------|-----------|
 | #6 Question domain entity | Merged |
 | #3 CI baseline | Already done (CI workflow pushed) |
+| #9 EF Core + SQLite dev setup | Phase 2 commit |
 | #2 Admin create/list question | Phase 3 commit |
 
 ## Deferred to Iteration 2
