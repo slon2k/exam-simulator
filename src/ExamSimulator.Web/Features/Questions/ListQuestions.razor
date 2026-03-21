@@ -1,0 +1,56 @@
+@page "/questions"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+
+@inject ExamSimulatorDbContext DbContext
+
+<PageTitle>Questions</PageTitle>
+
+<h1>Questions</h1>
+
+<p><a href="/questions/create" class="btn btn-primary">Create Question</a></p>
+
+@if (_questions is null)
+{
+    <p>Loading...</p>
+}
+else if (_questions.Count == 0)
+{
+    <p>No questions yet.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Exam Profile</th>
+                <th>Prompt</th>
+                <th>Topic</th>
+                <th>Options</th>
+                <th>Correct</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var q in _questions)
+            {
+                <tr>
+                    <td>@q.ExamProfileId</td>
+                    <td>@q.Prompt</td>
+                    <td>@q.TopicTag</td>
+                    <td>@q.Options.Count</td>
+                    <td>@q.Options[q.CorrectOptionIndex]</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Question>? _questions;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _questions = await DbContext.Questions.AsNoTracking().ToListAsync();
+    }
+}
