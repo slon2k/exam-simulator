@@ -25,6 +25,7 @@ jobs:
       - name: Deploy Bicep
         uses: azure/arm-deploy@v2
         with:
+          scope: resourcegroup
           resourceGroupName: ${{ env.RESOURCE_GROUP }}
           template: infra/bicep/main.bicep
           parameters: infra/bicep/environments/staging/staging.bicepparam adminLogin=${{ secrets.SQL_ADMIN_LOGIN }} adminPassword=${{ secrets.SQL_ADMIN_PASSWORD }}
