@@ -54,9 +54,11 @@ public class QuestionAdminTests : IClassFixture<WebApplicationFactory<Program>>
         var question = new Question(
             Guid.NewGuid(),
             "az-204",
+            QuestionType.SingleChoice,
+            Difficulty.Medium,
             "What is Azure App Service?",
             ["A PaaS offering", "An IaaS offering", "A SaaS offering", "A FaaS offering"],
-            0,
+            [0],
             "app-service");
 
         db.Questions.Add(question);
@@ -68,7 +70,60 @@ public class QuestionAdminTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal("az-204", saved.ExamProfileId);
         Assert.Equal("What is Azure App Service?", saved.Prompt);
         Assert.Equal(4, saved.Options.Count);
-        Assert.Equal(0, saved.CorrectOptionIndex);
+        Assert.Equal([0], saved.CorrectOptionIndices);
         Assert.Equal("app-service", saved.TopicTag);
+        Assert.Equal(QuestionType.SingleChoice, saved.Type);
+        Assert.Equal(Difficulty.Medium, saved.Difficulty);
+    }
+
+    [Fact]
+    public async Task EditQuestion_PageLoads_ForExistingQuestion()
+    {
+        var questionId = Guid.NewGuid();
+        var factory = _factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureTestServices(services =>
+            {
+                var toRemove = services
+                    .Where(d => d.ServiceType == typeof(IDbContextOptionsConfiguration<ExamSimulatorDbContext>))
+                    .ToList();
+                foreach (var d in toRemove)
+                    services.Remove(d);
+
+                var dbName = Guid.NewGuid().ToString();
+                services.AddDbContext<ExamSimulatorDbContext>(options =>
+                    options.UseInMemoryDatabase(dbName));
+
+                var sp = services.BuildServiceProvider();
+                using var scope = sp.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<ExamSimulatorDbContext>();
+                db.Questions.Add(new Question(
+                    questionId,
+                    "az-204",
+                    QuestionType.SingleChoice,
+                    Difficulty.Medium,
+                    "What is Azure?",
+                    ["Cloud", "Server", "Database", "Network"],
+                    [0],
+                    "azure-basics"));
+                db.SaveChanges();
+            });
+        });
+
+        var client = factory.CreateClient();
+
+        var response = await client.GetAsync($"/questions/{questionId}/edit");
+
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task EditQuestion_PageLoads_ForNonExistentQuestion()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync($"/questions/{Guid.NewGuid()}/edit");
+
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
     }
 }

@@ -18,6 +18,33 @@
     </div>
 
     <div class="mb-3">
+        <label class="form-label">Question Type</label>
+        <div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" id="typeSingle" name="questionType"
+                       checked="@(_model.Type == QuestionType.SingleChoice)"
+                       @onchange="() => SetType(QuestionType.SingleChoice)" />
+                <label class="form-check-label" for="typeSingle">Single Choice</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" id="typeMultiple" name="questionType"
+                       checked="@(_model.Type == QuestionType.MultipleChoice)"
+                       @onchange="() => SetType(QuestionType.MultipleChoice)" />
+                <label class="form-check-label" for="typeMultiple">Multiple Choice</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Difficulty</label>
+        <InputSelect class="form-select" @bind-Value="_model.Difficulty">
+            <option value="@Difficulty.Easy">Easy</option>
+            <option value="@Difficulty.Medium">Medium</option>
+            <option value="@Difficulty.Hard">Hard</option>
+        </InputSelect>
+    </div>
+
+    <div class="mb-3">
         <label class="form-label">Prompt</label>
         <InputTextArea class="form-control" rows="3" @bind-Value="_model.Prompt" />
         <ValidationMessage For="() => _model.Prompt" />
@@ -30,15 +57,36 @@
     </div>
 
     <div class="mb-3">
-        <label class="form-label">Options</label>
+        <label class="form-label">
+            Options
+            @if (_model.Type == QuestionType.SingleChoice)
+            {
+                <small class="text-muted ms-1">(select the correct answer)</small>
+            }
+            else
+            {
+                <small class="text-muted ms-1">(select all correct answers)</small>
+            }
+        </label>
         @for (int i = 0; i < _model.Options.Count; i++)
         {
             var index = i;
             <div class="input-group mb-2">
                 <div class="input-group-text">
-                    <input type="radio" name="correctOption" checked="@(_model.CorrectOptionIndex == index)"
-                           @onchange="() => _model.CorrectOptionIndex = index"
-                           title="Mark as correct" />
+                    @if (_model.Type == QuestionType.SingleChoice)
+                    {
+                        <input type="radio" name="correctOption"
+                               checked="@(_model.CorrectOptionIndex == index)"
+                               @onchange="() => _model.CorrectOptionIndex = index"
+                               title="Mark as correct" />
+                    }
+                    else
+                    {
+                        <input type="checkbox"
+                               checked="@_model.SelectedIndices.Contains(index)"
+                               @onchange="e => ToggleIndex(index, (bool)e.Value!)"
+                               title="Mark as correct" />
+                    }
                 </div>
                 <input type="text" class="form-control" value="@_model.Options[index]"
                        @oninput="e => _model.Options[index] = e.Value?.ToString() ?? string.Empty"
@@ -50,6 +98,11 @@
             </div>
         }
         <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="AddOption">+ Add Option</button>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Explanation <span class="text-muted">(optional)</span></label>
+        <InputTextArea class="form-control" rows="2" @bind-Value="_model.Explanation" />
     </div>
 
     @if (_errorMessage is not null)
@@ -72,6 +125,27 @@
         _model.Options.RemoveAt(index);
         if (_model.CorrectOptionIndex >= _model.Options.Count)
             _model.CorrectOptionIndex = _model.Options.Count - 1;
+        _model.SelectedIndices.RemoveWhere(i => i == index);
+        var shifted = _model.SelectedIndices.Where(i => i > index).ToList();
+        foreach (var i in shifted)
+        {
+            _model.SelectedIndices.Remove(i);
+            _model.SelectedIndices.Add(i - 1);
+        }
+    }
+
+    private void SetType(QuestionType type)
+    {
+        _model.Type = type;
+        _model.SelectedIndices.Clear();
+    }
+
+    private void ToggleIndex(int index, bool isChecked)
+    {
+        if (isChecked)
+            _model.SelectedIndices.Add(index);
+        else
+            _model.SelectedIndices.Remove(index);
     }
 
     private async Task HandleSubmit()
@@ -79,13 +153,20 @@
         _errorMessage = null;
         try
         {
+            IEnumerable<int> correctIndices = _model.Type == QuestionType.SingleChoice
+                ? [_model.CorrectOptionIndex]
+                : _model.SelectedIndices.Order();
+
             var question = new Question(
                 Guid.NewGuid(),
                 _model.ExamProfileId,
+                _model.Type,
+                _model.Difficulty,
                 _model.Prompt,
                 _model.Options,
-                _model.CorrectOptionIndex,
-                _model.TopicTag);
+                correctIndices,
+                _model.TopicTag,
+                _model.Explanation);
 
             DbContext.Questions.Add(question);
             await DbContext.SaveChangesAsync();
@@ -103,6 +184,10 @@
         public string Prompt { get; set; } = string.Empty;
         public string TopicTag { get; set; } = string.Empty;
         public List<string> Options { get; set; } = ["", "", "", ""];
+        public QuestionType Type { get; set; } = QuestionType.SingleChoice;
+        public Difficulty Difficulty { get; set; } = Difficulty.Medium;
+        public string Explanation { get; set; } = string.Empty;
         public int CorrectOptionIndex { get; set; }
+        public HashSet<int> SelectedIndices { get; set; } = [];
     }
 }
