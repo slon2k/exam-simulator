@@ -42,6 +42,10 @@ else if (_state == SessionState.InProgress)
             {
                 <p class="text-muted fst-italic">Select all that apply.</p>
             }
+            else if (q.Type == QuestionType.Ordering)
+            {
+                <p class="text-muted fst-italic">Arrange the options in the correct order.</p>
+            }
 
             <div class="list-group mt-3">
                 @for (int i = 0; i < q.Options.Count; i++)
@@ -49,7 +53,19 @@ else if (_state == SessionState.InProgress)
                     var optionIndex = i;
                     var isSelected = _answers.TryGetValue(q.Id, out var sel) && sel.Contains(optionIndex);
 
-                    @if (q.Type == QuestionType.SingleChoice)
+                    @if (q.Type == QuestionType.Ordering)
+                    {
+                        var orderedAnswer = _answers.TryGetValue(q.Id, out var ord) ? ord : Enumerable.Range(0, q.Options.Count).ToList();
+                        var displayIndex = orderedAnswer[optionIndex];
+                        <div class="list-group-item d-flex align-items-center gap-2">
+                            <div class="d-flex flex-column">
+                                <button class="btn btn-sm btn-outline-secondary py-0" @onclick="() => MoveUp(q.Id, optionIndex)" disabled="@(optionIndex == 0)" title="Move up">↑</button>
+                                <button class="btn btn-sm btn-outline-secondary py-0" @onclick="() => MoveDown(q.Id, optionIndex)" disabled="@(optionIndex == q.Options.Count - 1)" title="Move down">↓</button>
+                            </div>
+                            <span>@q.Options[displayIndex]</span>
+                        </div>
+                    }
+                    else if (q.Type == QuestionType.SingleChoice)
                     {
                         <label class="list-group-item list-group-item-action @(isSelected ? "active" : "")">
                             <input type="radio"
@@ -108,7 +124,9 @@ else if (_state == SessionState.Submitted)
         var userSel = _answers.TryGetValue(q.Id, out var s) ? s : new List<int>();
         var correct = new HashSet<int>(q.CorrectOptionIndices);
         var userSet = new HashSet<int>(userSel);
-        var isCorrect = correct.SetEquals(userSet);
+        var isCorrect = q.Type == QuestionType.Ordering
+            ? q.CorrectOptionIndices.SequenceEqual(userSel)
+            : correct.SetEquals(userSet);
 
         <div class="card mb-3 border-@(isCorrect ? "success" : "danger")">
             <div class="card-header bg-@(isCorrect ? "success" : "danger") text-white">
@@ -117,16 +135,35 @@ else if (_state == SessionState.Submitted)
             <div class="card-body">
                 <p class="fw-bold">@q.Prompt</p>
                 <ul class="list-unstyled">
-                    @for (int oi = 0; oi < q.Options.Count; oi++)
+                    @if (q.Type == QuestionType.Ordering)
                     {
-                        var optIdx = oi;
-                        var wasSelected = userSet.Contains(optIdx);
-                        var isCorrectOpt = correct.Contains(optIdx);
+                        var userOrder = _answers.TryGetValue(q.Id, out var ord) ? ord : Enumerable.Range(0, q.Options.Count).ToList();
+                        @for (int oi = 0; oi < q.Options.Count; oi++)
+                        {
+                            var pos = oi;
+                            var displayedOptionIdx = userOrder[pos];
+                            var correctAtPos = q.CorrectOptionIndices[pos];
+                            var placedCorrectly = displayedOptionIdx == correctAtPos;
+                            <li class="@(placedCorrectly ? "text-success fw-semibold" : "text-danger")">
+                                @(pos + 1). @q.Options[displayedOptionIdx]
+                                @if (placedCorrectly) { <span class="ms-1">✓</span> }
+                                else { <span class="ms-1 text-muted fst-italic">(expected: @q.Options[correctAtPos])</span> }
+                            </li>
+                        }
+                    }
+                    else
+                    {
+                        @for (int oi = 0; oi < q.Options.Count; oi++)
+                        {
+                            var optIdx = oi;
+                            var wasSelected = userSet.Contains(optIdx);
+                            var isCorrectOpt = correct.Contains(optIdx);
 
-                        <li class="@(isCorrectOpt ? "text-success fw-semibold" : wasSelected ? "text-danger text-decoration-line-through" : "")">
-                            @(wasSelected ? "☑" : "☐") @q.Options[optIdx]
-                            @if (isCorrectOpt) { <span class="ms-1">✓</span> }
-                        </li>
+                            <li class="@(isCorrectOpt ? "text-success fw-semibold" : wasSelected ? "text-danger text-decoration-line-through" : "")">
+                                @(wasSelected ? "☑" : "☐") @q.Options[optIdx]
+                                @if (isCorrectOpt) { <span class="ms-1">✓</span> }
+                            </li>
+                        }
                     }
                 </ul>
                 @if (q.Explanation is not null)
@@ -177,6 +214,11 @@ else if (_state == SessionState.Submitted)
             return;
         }
 
+        _questions = _questions.OrderBy(_ => Random.Shared.Next()).ToList();
+
+        foreach (var q in _questions.Where(q => q.Type == QuestionType.Ordering))
+            _answers[q.Id] = Enumerable.Range(0, q.Options.Count).OrderBy(_ => Random.Shared.Next()).ToList();
+
         _state = SessionState.InProgress;
     }
 
@@ -203,15 +245,35 @@ else if (_state == SessionState.Submitted)
 
     private void Prev() => _currentIndex--;
 
+    private void MoveUp(Guid questionId, int position)
+    {
+        if (!_answers.TryGetValue(questionId, out var order) || position <= 0) return;
+        (order[position - 1], order[position]) = (order[position], order[position - 1]);
+    }
+
+    private void MoveDown(Guid questionId, int position)
+    {
+        if (!_answers.TryGetValue(questionId, out var order) || position >= order.Count - 1) return;
+        (order[position], order[position + 1]) = (order[position + 1], order[position]);
+    }
+
     private void Submit()
     {
         _score = 0;
         foreach (var q in _questions)
         {
             var userSel = _answers.TryGetValue(q.Id, out var s) ? s : new List<int>();
-            var correct = new HashSet<int>(q.CorrectOptionIndices);
-            if (correct.SetEquals(new HashSet<int>(userSel)))
-                _score++;
+            if (q.Type == QuestionType.Ordering)
+            {
+                if (q.CorrectOptionIndices.SequenceEqual(userSel))
+                    _score++;
+            }
+            else
+            {
+                var correct = new HashSet<int>(q.CorrectOptionIndices);
+                if (correct.SetEquals(new HashSet<int>(userSel)))
+                    _score++;
+            }
         }
         _state = SessionState.Submitted;
     }
