@@ -19,34 +19,45 @@ public static class DbSeeder
 
         db.Questions.AddRange(
             new Question(Guid.NewGuid(), "az-204", QuestionType.SingleChoice, Difficulty.Easy,
-                "Which Azure service provides a fully managed platform for running containerized applications without managing the underlying infrastructure?",
+                "Which Azure service provides a **fully managed** platform for running containerized applications without managing the underlying infrastructure?",
                 ["Azure Virtual Machines", "Azure Container Apps", "Azure Kubernetes Service", "Azure App Service"],
                 [1], "compute",
-                "Azure Container Apps is a fully managed serverless container service built on top of Kubernetes."),
+                "`Azure Container Apps` is a fully managed serverless container service built on top of Kubernetes. Unlike `Azure Kubernetes Service`, it abstracts away cluster management entirely."),
 
             new Question(Guid.NewGuid(), "az-204", QuestionType.SingleChoice, Difficulty.Medium,
-                "What is the default time-to-live (TTL) for an Azure Blob Storage access tier transition in a lifecycle management policy?",
-                ["1 day", "7 days", "30 days", "No default — must be set explicitly"],
+                "What is the default number of days before a Blob Storage lifecycle management policy transitions a blob between access tiers (`hot` → `cool` → `archive`)?\n\n> Hint: think about what happens when no days value is configured.",
+                ["1 day", "7 days", "30 days", "No default — the number of days must be set explicitly"],
                 [3], "storage",
-                "Lifecycle management policies require explicitly defining the number of days before transitioning or deleting blobs."),
+                "Lifecycle management policies **require** an explicit `daysAfterModificationGreaterThan` or equivalent condition. There is no built-in default."),
 
             new Question(Guid.NewGuid(), "az-204", QuestionType.SingleChoice, Difficulty.Hard,
-                "An Azure Function uses a Service Bus trigger. After processing a message the function throws an unhandled exception. What happens to the message by default?",
-                ["It is immediately deleted from the queue", "It is moved to the dead-letter queue", "It is abandoned and retried up to the max delivery count, then dead-lettered", "It is re-queued indefinitely"],
+                "An Azure Function uses a **Service Bus trigger**. The function throws an unhandled exception after receiving a message. What happens to the message by default?",
+                ["It is immediately deleted from the queue", "It is moved straight to the dead-letter queue", "It is abandoned and retried up to the `maxDeliveryCount`, then dead-lettered", "It is re-queued indefinitely"],
                 [2], "messaging",
-                "When the function fails, the SDK abandons the message. After the max delivery count is reached it moves to the dead-letter queue."),
+                "When the function fails, the Service Bus SDK **abandons** the message lock. The broker retries delivery until `maxDeliveryCount` is reached, after which the message is moved to the `$DeadLetterQueue`."),
 
             new Question(Guid.NewGuid(), "az-204", QuestionType.MultipleChoice, Difficulty.Medium,
-                "Which of the following are valid Azure App Service deployment slots? (Select all that apply)",
+                "Which of the following are valid **Azure App Service deployment slot** names? (Select all that apply)\n\n*App Service supports up to 20 named slots per app.*",
                 ["production", "staging", "testing", "development", "preview"],
                 [0, 1, 2, 3, 4], "app-service",
-                "App Service supports up to 20 named deployment slots; any name is valid including production, staging, testing, development, and preview."),
+                "Any name is valid — `production`, `staging`, `testing`, `development`, and `preview` are all legitimate slot names. The slot named `production` is the live slot by default."),
 
             new Question(Guid.NewGuid(), "az-204", QuestionType.MultipleChoice, Difficulty.Hard,
-                "Which authentication flows are supported by MSAL for a web API that calls a downstream API on behalf of a signed-in user? (Select all that apply)",
-                ["Authorization code flow", "On-Behalf-Of (OBO) flow", "Client credentials flow", "Device code flow"],
+                "A **web API** needs to call a downstream API on behalf of the signed-in user. Which MSAL authentication flows support this scenario? (Select all that apply)",
+                ["Authorization code flow", "On-Behalf-Of (`OBO`) flow", "Client credentials flow", "Device code flow"],
                 [1, 2], "authentication",
-                "A web API uses the On-Behalf-Of flow to obtain tokens for downstream APIs. Client credentials is used for daemon apps, not on behalf of users.")
+                "The **On-Behalf-Of (OBO)** flow lets a mid-tier API exchange an incoming access token for a new token scoped to the downstream API.\n\n**Client credentials** can also be used when the API calls the downstream API as itself (not on behalf of a user), e.g. for background processing."),
+
+            new Question(Guid.NewGuid(), "az-204", QuestionType.Ordering, Difficulty.Medium,
+                "Place the following steps in the **correct order** to grant an Azure App Service access to Key Vault secrets using a **managed identity**:\n\n```\nNo passwords or connection strings stored in code.\n```",
+                [
+                    "Enable the **system-assigned managed identity** on the App Service",
+                    "Grant the identity the `Key Vault Secrets User` role on the Key Vault",
+                    "Add an app setting using the Key Vault reference syntax: `@Microsoft.KeyVault(SecretUri=<uri>)`",
+                    "Restart the App Service to apply the updated application settings"
+                ],
+                [0, 1, 2, 3], "keyvault",
+                "The identity must exist before you can assign a role to it. The role must be in place before the Key Vault reference resolves. The app setting takes effect only after the service restarts and re-reads configuration.")
         );
 
         db.SaveChanges();

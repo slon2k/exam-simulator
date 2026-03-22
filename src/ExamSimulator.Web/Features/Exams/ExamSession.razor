@@ -36,7 +36,7 @@ else if (_state == SessionState.InProgress)
             }
         </div>
         <div class="card-body">
-            <p class="card-text fs-5">@q.Prompt</p>
+            <div class="card-text fs-5"><MarkdownText Value="@q.Prompt" /></div>
 
             @if (q.Type == QuestionType.MultipleChoice)
             {
@@ -133,7 +133,7 @@ else if (_state == SessionState.Submitted)
                 Q@(qi + 1): @(isCorrect ? "Correct" : "Incorrect")
             </div>
             <div class="card-body">
-                <p class="fw-bold">@q.Prompt</p>
+                <div class="fw-bold"><MarkdownText Value="@q.Prompt" /></div>
                 <ul class="list-unstyled">
                     @if (q.Type == QuestionType.Ordering)
                     {
@@ -168,7 +168,7 @@ else if (_state == SessionState.Submitted)
                 </ul>
                 @if (q.Explanation is not null)
                 {
-                    <p class="text-muted mt-2"><em>@q.Explanation</em></p>
+                    <div class="text-muted mt-2 fst-italic"><MarkdownText Value="@q.Explanation" /></div>
                 }
             </div>
         </div>

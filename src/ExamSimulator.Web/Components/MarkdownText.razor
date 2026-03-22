@@ -1,0 +1,21 @@
+@using Markdig
+@using Microsoft.AspNetCore.Components
+
+@if (!string.IsNullOrWhiteSpace(Value))
+{
+    @((MarkupString)_html)
+}
+
+@code {
+    [Parameter, EditorRequired] public string? Value { get; set; }
+
+    private string _html = string.Empty;
+
+    private static readonly MarkdownPipeline _pipeline =
+        new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+
+    protected override void OnParametersSet()
+    {
+        _html = Value is not null ? Markdown.ToHtml(Value, _pipeline) : string.Empty;
+    }
+}
