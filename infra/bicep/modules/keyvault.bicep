@@ -42,7 +42,7 @@ resource kvSecretsUserRoleAssignment 'Microsoft.Authorization/roleAssignments@20
   scope: kv
   name: guid(kv.id, appServicePrincipalId, kvSecretsUserRoleId)
   properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', kvSecretsUserRoleId)
+    roleDefinitionId: '/subscriptions/${subscription().subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/${kvSecretsUserRoleId}'
     principalId: appServicePrincipalId
     principalType: 'ServicePrincipal'
   }
