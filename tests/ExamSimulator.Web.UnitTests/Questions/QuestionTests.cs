@@ -224,6 +224,23 @@ public class QuestionTests
         Assert.Equal("correctOptionIndices", ex.ParamName);
     }
 
+    [Fact]
+    public void Constructor_Ordering_WithIdentityPermutation_IsValid()
+    {
+        var question = Ordering(correctIndices: [0, 1, 2, 3]);
+
+        Assert.Equal([0, 1, 2, 3], question.CorrectOptionIndices);
+    }
+
+    [Fact]
+    public void Constructor_Ordering_WithTwoOptions_ValidPermutation_Accepts()
+    {
+        var question = Ordering(options: ["First", "Second"], correctIndices: [1, 0]);
+
+        Assert.Equal(2, question.Options.Count);
+        Assert.Equal([1, 0], question.CorrectOptionIndices);
+    }
+
     // ── shared option/prompt invariants ───────────────────────────────────────
 
     [Fact]
