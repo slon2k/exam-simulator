@@ -1,0 +1,91 @@
+@page "/exam-profiles/{Id}/edit"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+
+@inject ExamSimulatorDbContext DbContext
+@inject NavigationManager Nav
+
+<PageTitle>Edit Exam Profile</PageTitle>
+
+<h1>Edit Exam Profile</h1>
+
+@if (_notFound)
+{
+    <div class="alert alert-warning">Exam profile not found.</div>
+    <a href="/exam-profiles" class="btn btn-secondary">Back to Exam Profiles</a>
+}
+else if (_model is not null)
+{
+    <EditForm Model="_model" OnValidSubmit="HandleSubmit" FormName="EditExamProfile">
+        <div class="mb-3">
+            <label class="form-label">Id</label>
+            <input class="form-control" value="@Id" disabled />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Name</label>
+            <InputText class="form-control" @bind-Value="_model.Name" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Description <span class="text-muted">(optional)</span></label>
+            <InputTextArea class="form-control" rows="2" @bind-Value="_model.Description" />
+        </div>
+
+        @if (_errorMessage is not null)
+        {
+            <div class="alert alert-danger">@_errorMessage</div>
+        }
+
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="/exam-profiles" class="btn btn-secondary ms-2">Cancel</a>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public string Id { get; set; } = string.Empty;
+
+    private EditExamProfileModel? _model;
+    private bool _notFound;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var profile = await DbContext.ExamProfiles.AsNoTracking().FirstOrDefaultAsync(p => p.Id == Id);
+        if (profile is null)
+        {
+            _notFound = true;
+            return;
+        }
+
+        _model = new EditExamProfileModel
+        {
+            Name = profile.Name,
+            Description = profile.Description,
+        };
+    }
+
+    private async Task HandleSubmit()
+    {
+        _errorMessage = null;
+        try
+        {
+            var updated = new ExamProfile(Id, _model!.Name, _model.Description);
+            DbContext.ExamProfiles.Update(updated);
+            await DbContext.SaveChangesAsync();
+            DbContext.ChangeTracker.Clear();
+            Nav.NavigateTo("/exam-profiles");
+        }
+        catch (ArgumentException ex)
+        {
+            _errorMessage = ex.Message;
+        }
+    }
+
+    private sealed class EditExamProfileModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+    }
+}

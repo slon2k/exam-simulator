@@ -1,0 +1,85 @@
+@page "/exam-profiles/create"
+@rendermode InteractiveServer
+
+@using System.Text.RegularExpressions
+@using Microsoft.EntityFrameworkCore
+
+@inject ExamSimulatorDbContext DbContext
+@inject NavigationManager Nav
+
+<PageTitle>Create Exam Profile</PageTitle>
+
+<h1>Create Exam Profile</h1>
+
+<EditForm Model="_model" OnValidSubmit="HandleSubmit" FormName="CreateExamProfile">
+    <div class="mb-3">
+        <label class="form-label">Id <small class="text-muted">(slug, e.g. az-204)</small></label>
+        <InputText class="form-control" @bind-Value="_model.Id" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Name</label>
+        <InputText class="form-control" @bind-Value="_model.Name" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Description <span class="text-muted">(optional)</span></label>
+        <InputTextArea class="form-control" rows="2" @bind-Value="_model.Description" />
+    </div>
+
+    @if (_errorMessage is not null)
+    {
+        <div class="alert alert-danger">@_errorMessage</div>
+    }
+
+    <button type="submit" class="btn btn-primary">Save</button>
+    <a href="/exam-profiles" class="btn btn-secondary ms-2">Cancel</a>
+</EditForm>
+
+@code {
+    private readonly CreateExamProfileModel _model = new();
+    private string? _errorMessage;
+
+    private static readonly Regex SlugPattern = new(@"^[a-z0-9]+(?:-[a-z0-9]+)*$", RegexOptions.Compiled);
+
+    private async Task HandleSubmit()
+    {
+        _errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(_model.Id))
+        {
+            _errorMessage = "Exam profile id is required.";
+            return;
+        }
+
+        if (!SlugPattern.IsMatch(_model.Id))
+        {
+            _errorMessage = "Exam profile id must be a slug: lowercase letters, digits, and hyphens only (no leading/trailing/consecutive hyphens).";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_model.Name))
+        {
+            _errorMessage = "Exam profile name is required.";
+            return;
+        }
+
+        if (await DbContext.ExamProfiles.AnyAsync(p => p.Id == _model.Id))
+        {
+            _errorMessage = $"An exam profile with id \"{_model.Id}\" already exists.";
+            return;
+        }
+
+        var profile = new ExamProfile(_model.Id, _model.Name, _model.Description);
+        DbContext.ExamProfiles.Add(profile);
+        await DbContext.SaveChangesAsync();
+        Nav.NavigateTo("/exam-profiles");
+    }
+
+    private sealed class CreateExamProfileModel
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+    }
+}

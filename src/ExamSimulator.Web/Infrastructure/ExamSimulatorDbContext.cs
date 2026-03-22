@@ -1,3 +1,4 @@
+using ExamSimulator.Web.Domain.ExamProfiles;
 using ExamSimulator.Web.Domain.Questions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -6,15 +7,29 @@ namespace ExamSimulator.Web.Infrastructure;
 
 public class ExamSimulatorDbContext(DbContextOptions<ExamSimulatorDbContext> options) : DbContext(options)
 {
+    public DbSet<ExamProfile> ExamProfiles => Set<ExamProfile>();
     public DbSet<Question> Questions => Set<Question>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<ExamProfile>(entity =>
+        {
+            entity.HasKey(p => p.Id);
+            entity.ToTable("ExamProfiles");
+            entity.Property(p => p.Id).IsRequired();
+            entity.Property(p => p.Name).IsRequired();
+            entity.Property(p => p.Description).IsRequired(false);
+        });
+
         modelBuilder.Entity<Question>(entity =>
         {
             entity.HasKey(q => q.Id);
             entity.ToTable("Questions");
             entity.Property(q => q.ExamProfileId).IsRequired();
+            entity.HasOne<ExamProfile>()
+                .WithMany()
+                .HasForeignKey(q => q.ExamProfileId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.Property(q => q.Prompt).IsRequired();
             entity.Property(q => q.TopicTag).IsRequired();
             entity.Property(q => q.Type).IsRequired();

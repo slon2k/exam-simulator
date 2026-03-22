@@ -1,6 +1,8 @@
 @page "/questions/create"
 @rendermode InteractiveServer
 
+@using Microsoft.EntityFrameworkCore
+
 @inject ExamSimulatorDbContext DbContext
 @inject NavigationManager Nav
 
@@ -12,8 +14,14 @@
     <DataAnnotationsValidator />
 
     <div class="mb-3">
-        <label class="form-label">Exam Profile ID</label>
-        <InputText class="form-control" @bind-Value="_model.ExamProfileId" />
+        <label class="form-label">Exam Profile</label>
+        <InputSelect class="form-select" @bind-Value="_model.ExamProfileId">
+            <option value="">-- select --</option>
+            @foreach (var p in _examProfiles)
+            {
+                <option value="@p.Id">@p.Name</option>
+            }
+        </InputSelect>
         <ValidationMessage For="() => _model.ExamProfileId" />
     </div>
 
@@ -116,7 +124,13 @@
 
 @code {
     private readonly CreateQuestionModel _model = new();
+    private List<ExamProfile> _examProfiles = [];
     private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _examProfiles = await DbContext.ExamProfiles.AsNoTracking().OrderBy(p => p.Name).ToListAsync();
+    }
 
     private void AddOption() => _model.Options.Add(string.Empty);
 

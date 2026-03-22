@@ -1,0 +1,101 @@
+@page "/exam-profiles"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+
+@inject ExamSimulatorDbContext DbContext
+@inject IJSRuntime JS
+
+<PageTitle>Exam Profiles</PageTitle>
+
+<h1>Exam Profiles</h1>
+
+<p><a href="/exam-profiles/create" class="btn btn-primary">Create Exam Profile</a></p>
+
+@if (_profiles is null)
+{
+    <p>Loading...</p>
+}
+else if (_profiles.Count == 0)
+{
+    <p>No exam profiles yet.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Questions</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in _profiles)
+            {
+                <tr>
+                    <td>@row.Profile.Id</td>
+                    <td>@row.Profile.Name</td>
+                    <td>@row.Profile.Description</td>
+                    <td>@row.QuestionCount</td>
+                    <td>
+                        <a href="/exam-profiles/@row.Profile.Id/edit" class="btn btn-sm btn-outline-primary me-1">Edit</a>
+                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                @onclick="() => DeleteProfile(row.Profile)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (_errorMessage is not null)
+{
+    <div class="alert alert-danger mt-3">@_errorMessage</div>
+}
+
+@code {
+    private List<ProfileRow>? _profiles;
+    private string? _errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var profiles = await DbContext.ExamProfiles.AsNoTracking().OrderBy(p => p.Name).ToListAsync();
+        var counts = await DbContext.Questions.AsNoTracking()
+            .GroupBy(q => q.ExamProfileId)
+            .Select(g => new { Id = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Id, x => x.Count);
+
+        _profiles = profiles.Select(p => new ProfileRow(p, counts.GetValueOrDefault(p.Id))).ToList();
+    }
+
+    private async Task DeleteProfile(ExamProfile profile)
+    {
+        _errorMessage = null;
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Delete exam profile \"{profile.Name}\"?");
+        if (!confirmed) return;
+
+        var entity = await DbContext.ExamProfiles.FindAsync(profile.Id);
+        if (entity is null) return;
+
+        try
+        {
+            DbContext.ExamProfiles.Remove(entity);
+            await DbContext.SaveChangesAsync();
+            _profiles!.RemoveAll(r => r.Profile.Id == profile.Id);
+        }
+        catch (DbUpdateException)
+        {
+            _errorMessage = $"Cannot delete \"{profile.Name}\" because it has questions assigned to it.";
+        }
+    }
+
+    private sealed record ProfileRow(ExamProfile Profile, int QuestionCount);
+}
