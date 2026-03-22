@@ -10,10 +10,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddDbContext<ExamSimulatorDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    if (builder.Environment.IsDevelopment())
-        options.UseSqlite(connectionString);
-    else
-        options.UseSqlServer(connectionString);
+    options.UseSqlServer(connectionString);
 });
 
 var app = builder.Build();
