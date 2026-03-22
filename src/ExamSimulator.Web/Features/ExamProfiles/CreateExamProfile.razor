@@ -1,6 +1,9 @@
 @page "/exam-profiles/create"
 @rendermode InteractiveServer
 
+@using System.Text.RegularExpressions
+@using Microsoft.EntityFrameworkCore
+
 @inject ExamSimulatorDbContext DbContext
 @inject NavigationManager Nav
 
@@ -37,20 +40,40 @@
     private readonly CreateExamProfileModel _model = new();
     private string? _errorMessage;
 
+    private static readonly Regex SlugPattern = new(@"^[a-z0-9]+(?:-[a-z0-9]+)*$", RegexOptions.Compiled);
+
     private async Task HandleSubmit()
     {
         _errorMessage = null;
-        try
+
+        if (string.IsNullOrWhiteSpace(_model.Id))
         {
-            var profile = new ExamProfile(_model.Id, _model.Name, _model.Description);
-            DbContext.ExamProfiles.Add(profile);
-            await DbContext.SaveChangesAsync();
-            Nav.NavigateTo("/exam-profiles");
+            _errorMessage = "Exam profile id is required.";
+            return;
         }
-        catch (ArgumentException ex)
+
+        if (!SlugPattern.IsMatch(_model.Id))
         {
-            _errorMessage = ex.Message;
+            _errorMessage = "Exam profile id must be a slug: lowercase letters, digits, and hyphens only (no leading/trailing/consecutive hyphens).";
+            return;
         }
+
+        if (string.IsNullOrWhiteSpace(_model.Name))
+        {
+            _errorMessage = "Exam profile name is required.";
+            return;
+        }
+
+        if (await DbContext.ExamProfiles.AnyAsync(p => p.Id == _model.Id))
+        {
+            _errorMessage = $"An exam profile with id \"{_model.Id}\" already exists.";
+            return;
+        }
+
+        var profile = new ExamProfile(_model.Id, _model.Name, _model.Description);
+        DbContext.ExamProfiles.Add(profile);
+        await DbContext.SaveChangesAsync();
+        Nav.NavigateTo("/exam-profiles");
     }
 
     private sealed class CreateExamProfileModel
