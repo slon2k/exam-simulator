@@ -18,8 +18,19 @@ builder.Services.AddDbContext<ExamSimulatorDbContext>(options =>
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
+// Startup diagnostics — log key env vars to help debug config issues
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+logger.LogInformation("ASPNETCORE_ENVIRONMENT: {Env}", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "(not set)");
+logger.LogInformation("SQLAZURECONNSTR_DefaultConnection present: {Present}",
+    !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SQLAZURECONNSTR_DefaultConnection")));
+var resolvedConnStr = app.Configuration.GetConnectionString("DefaultConnection");
+logger.LogInformation("ConnectionStrings:DefaultConnection present: {Present}, starts with: {Prefix}",
+    !string.IsNullOrEmpty(resolvedConnStr),
+    resolvedConnStr?.Length >= 20 ? resolvedConnStr[..20] : resolvedConnStr);
+
+if (!app.Configuration.GetValue<bool>("SkipMigrations"))
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ExamSimulatorDbContext>();
     if (db.Database.IsRelational())
     {
