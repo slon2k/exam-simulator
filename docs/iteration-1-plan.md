@@ -138,9 +138,11 @@ Steps:
 | #9 EF Core + SQLite dev setup | Phase 2 commit |
 | #2 Admin create/list question | Phase 3 commit |
 
-## Deferred to Iteration 2
+## Deferred to Iteration 2 — Status
 
-- #4 CD scaffold (manual deploy workflow)
-- #5 Infra baseline (IaC skeleton)
-- SQL Server configuration (replace SQLite)
-- Branch protection rules on main
+| Item | Status |
+|------|--------|
+| #4 CD scaffold (manual deploy workflow) | ✅ Done — `provision-infra-staging.yml` + `deploy-app-staging.yml` |
+| #5 Infra baseline (IaC skeleton) | ✅ Done — Bicep modules for App Service, SQL Server, Key Vault |
+| SQL Server configuration (replace SQLite) | ✅ Done — staging uses SQL Server via EF Core migrations |
+| Branch protection rules on main | Pending |

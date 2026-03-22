@@ -4,7 +4,12 @@
 
 Staging deployments are triggered manually via GitHub Actions. The workflow provisions (or updates) Azure infrastructure using Bicep and then deploys the application to the App Service.
 
-**Workflow file:** `.github/workflows/deploy-staging.yml`
+**Workflow files:**
+
+| Workflow | File | Use when |
+|----------|------|----------|
+| Provision Infrastructure (Staging) | `.github/workflows/provision-infra-staging.yml` | Infra changed **or** full redeploy |
+| Deploy Application (Staging) | `.github/workflows/deploy-app-staging.yml` | App-only redeploy (no infra changes) |
 
 ## Pre-requisites
 
@@ -42,19 +47,37 @@ az role assignment create \
 The resource group must exist before the first deployment:
 
 ```bash
-az group create --name rg-exam-simulator-stg --location eastus
+az group create --name rg-exam-simulator-stg --location centralus
 ```
 
 ## Triggering a deployment
 
+### Full deployment (infra + app)
+
 1. Go to the **Actions** tab in the GitHub repository.
-2. Select **Deploy to Staging** from the workflow list.
+2. Select **Provision Infrastructure (Staging)** from the workflow list.
 3. Click **Run workflow** → **Run workflow**.
 
-## What the workflow does
+This provisions (or updates) the Azure infrastructure and then builds and deploys the application.
+
+### App-only deployment
+
+1. Go to the **Actions** tab in the GitHub repository.
+2. Select **Deploy Application (Staging)** from the workflow list.
+3. Click **Run workflow** → **Run workflow**.
+
+Use this when only application code has changed and no infrastructure updates are needed.
+
+## What each workflow does
+
+### Provision Infrastructure (Staging)
 
 1. **Provision infrastructure** — runs `az deployment group` with `infra/bicep/main.bicep` and `staging.bicepparam`. This is idempotent: re-running it on existing resources is safe.
 2. **Build and deploy application** — runs `dotnet publish` in Release configuration, then deploys the output package to `app-exam-simulator-stg` via the Azure Web Apps Deploy action.
+
+### Deploy Application (Staging)
+
+1. **Build and deploy application** — runs `dotnet publish` in Release configuration, then deploys the output package to `app-exam-simulator-stg`. No infrastructure changes are made.
 
 ## Verifying the deployment
 
