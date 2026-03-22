@@ -12,6 +12,20 @@
 - `ExamProfileId` is a plain string — no ExamProfile entity or admin pages. ❌
 - No learner-facing exam-taking UI. ❌
 
+## Outcome (End of Iteration 3)
+
+- `ExamProfile` domain entity with slug PK, name, and description. ✅
+- FK from `Question.ExamProfileId` to `ExamProfile` with `DeleteBehavior.Restrict`. ✅
+- `AddExamProfile` migration applied on startup. ✅
+- Full admin CRUD for ExamProfile (List, Create, Edit, Delete). ✅
+- Questions Create/Edit use a dropdown populated from ExamProfiles. ✅
+- Learner exam list page at `/exams`. ✅
+- Learner exam session page at `/exams/{ProfileId}` with in-memory scoring. ✅
+- Nav links for "Take an Exam" and "Exam Profiles". ✅
+- 47 unit tests + 6 functional tests, all passing. ✅
+- All phases merged to main (PRs #25–#28). ✅
+- Phase 6 (staging deploy) — pending manual trigger.
+
 ## Goals
 
 1. Introduce `ExamProfile` as a proper domain entity with its own table and admin CRUD pages.
@@ -93,6 +107,8 @@ Steps:
 
 **Commit:** `feat: ExamProfile entity, FK to Questions, AddExamProfile migration`
 
+**Status:** ✅ Done — merged to main as PR #25.
+
 ---
 
 ### Phase 2: ExamProfile Admin CRUD
@@ -131,6 +147,8 @@ Steps:
 - Deleting a profile with attached questions shows an error (not a crash).
 
 **Commit:** `feat: ExamProfile admin CRUD pages, Questions dropdown`
+
+**Status:** ✅ Done — merged to main as PR #25.
 
 ---
 
@@ -171,6 +189,8 @@ Steps:
 
 **Commit:** `feat: exam-taking flow — ExamList and ExamSession pages`
 
+**Status:** ✅ Done — merged to main as PR #26.
+
 ---
 
 ### Phase 4: Navigation Update
@@ -185,6 +205,8 @@ Steps:
    - Add "Take an Exam" link → `/exams`.
 
 **Commit:** `feat: add Exam Profiles and Take an Exam nav links`
+
+**Status:** ✅ Done — merged to main as PR #27.
 
 ---
 
@@ -213,6 +235,8 @@ Steps:
 
 **Commit:** `test: ExamProfile unit tests and exam flow functional tests`
 
+**Status:** ✅ Done — merged to main as PR #28.
+
 ---
 
 ### Phase 6: Deploy to Staging
@@ -224,3 +248,5 @@ Steps:
 1. Commit and push all changes.
 2. Trigger the manual staging deploy workflow.
 3. Smoke test: `/exam-profiles`, `/exams`, `/questions/create` (dropdown) all load correctly in staging.
+
+**Status:** ⏳ Pending — trigger manually via GitHub Actions.
