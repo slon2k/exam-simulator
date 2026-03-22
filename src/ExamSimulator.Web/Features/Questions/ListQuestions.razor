@@ -68,6 +68,7 @@ else
     {
         DbContext.Questions.Remove(question);
         await DbContext.SaveChangesAsync();
+        DbContext.ChangeTracker.Clear();
         _questions!.Remove(question);
     }
 }

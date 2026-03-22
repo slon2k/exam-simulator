@@ -213,6 +213,7 @@ else if (_model is not null)
 
             DbContext.Questions.Update(updated);
             await DbContext.SaveChangesAsync();
+            DbContext.ChangeTracker.Clear();
             Nav.NavigateTo("/questions");
         }
         catch (ArgumentException ex)
