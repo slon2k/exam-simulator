@@ -27,8 +27,11 @@ else
                 <th>Exam Profile</th>
                 <th>Prompt</th>
                 <th>Topic</th>
+                <th>Type</th>
+                <th>Difficulty</th>
                 <th>Options</th>
                 <th>Correct</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -38,8 +41,15 @@ else
                     <td>@q.ExamProfileId</td>
                     <td>@q.Prompt</td>
                     <td>@q.TopicTag</td>
+                    <td>@q.Type</td>
+                    <td>@q.Difficulty</td>
                     <td>@q.Options.Count</td>
                     <td>@string.Join(", ", q.CorrectOptionIndices.Select(i => q.Options[i]))</td>
+                    <td>
+                        <a href="/questions/@q.Id/edit" class="btn btn-sm btn-outline-primary me-1">Edit</a>
+                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                @onclick="() => DeleteQuestion(q)">Delete</button>
+                    </td>
                 </tr>
             }
         </tbody>
@@ -52,5 +62,12 @@ else
     protected override async Task OnInitializedAsync()
     {
         _questions = await DbContext.Questions.AsNoTracking().ToListAsync();
+    }
+
+    private async Task DeleteQuestion(Question question)
+    {
+        DbContext.Questions.Remove(question);
+        await DbContext.SaveChangesAsync();
+        _questions!.Remove(question);
     }
 }
