@@ -24,8 +24,11 @@ if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ExamSimulatorDbContext>();
-    db.Database.EnsureDeleted();
-    db.Database.Migrate();
+    if (db.Database.IsRelational())
+    {
+        db.Database.EnsureDeleted();
+        db.Database.Migrate();
+    }
 
     db.Questions.AddRange(
         new Question(Guid.NewGuid(), "az-204", QuestionType.SingleChoice, Difficulty.Easy,
