@@ -1,3 +1,4 @@
+using ExamSimulator.Web.Domain.ExamProfiles;
 using ExamSimulator.Web.Domain.Questions;
 
 namespace ExamSimulator.Web.Infrastructure;
@@ -6,6 +7,16 @@ public static class DbSeeder
 {
     public static void Seed(ExamSimulatorDbContext db)
     {
+        if (!db.ExamProfiles.Any())
+        {
+            db.ExamProfiles.Add(new ExamProfile("az-204", "Azure Developer Associate AZ-204",
+                "Covers Azure compute, storage, security, and monitoring for the AZ-204 certification exam."));
+            db.SaveChanges();
+        }
+
+        if (db.Questions.Any())
+            return;
+
         db.Questions.AddRange(
             new Question(Guid.NewGuid(), "az-204", QuestionType.SingleChoice, Difficulty.Easy,
                 "Which Azure service provides a fully managed platform for running containerized applications without managing the underlying infrastructure?",
