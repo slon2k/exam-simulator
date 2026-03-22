@@ -2,7 +2,7 @@ using '../../main.bicep'
 
 param appServicePlanName = 'plan-exam-simulator-stg'
 param appName = 'app-exam-simulator-stg'
-param sqlServerName = 'sql-exam-simulator-stg'
+param sqlServerName = 'sql01-exam-simulator-stg'
 param sqlDatabaseName = 'ExamSimulator'
 param keyVaultName = 'kv-exam-sim-stg'
 param adminLogin = readEnvironmentVariable('SQL_ADMIN_LOGIN', '')
