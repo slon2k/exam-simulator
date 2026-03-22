@@ -4,6 +4,7 @@
 @using Microsoft.EntityFrameworkCore
 
 @inject ExamSimulatorDbContext DbContext
+@inject IJSRuntime JS
 
 <PageTitle>Questions</PageTitle>
 
@@ -66,9 +67,14 @@ else
 
     private async Task DeleteQuestion(Question question)
     {
-        DbContext.Questions.Remove(question);
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Delete question: \"{question.Prompt}\"?");
+        if (!confirmed) return;
+
+        var entity = await DbContext.Questions.FindAsync(question.Id);
+        if (entity is null) return;
+
+        DbContext.Questions.Remove(entity);
         await DbContext.SaveChangesAsync();
-        DbContext.ChangeTracker.Clear();
         _questions!.Remove(question);
     }
 }
