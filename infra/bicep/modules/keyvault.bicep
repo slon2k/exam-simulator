@@ -11,7 +11,7 @@ param appServicePrincipalId string
 param sqlConnectionString string
 
 // Key Vault Secrets User built-in role
-var kvSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e0'
+var kvSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'
 var connectionStringSecretName = 'ConnectionStrings--DefaultConnection'
 
 resource kv 'Microsoft.KeyVault/vaults@2023-07-01' = {
