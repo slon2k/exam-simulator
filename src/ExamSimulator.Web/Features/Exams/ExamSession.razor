@@ -1,0 +1,218 @@
+@page "/exams/{ProfileId}"
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+
+@inject ExamSimulatorDbContext DbContext
+@inject NavigationManager Nav
+
+<PageTitle>@(_profile?.Name ?? "Exam")</PageTitle>
+
+@if (_state == SessionState.Loading)
+{
+    <p>Loading...</p>
+}
+else if (_state == SessionState.NotFound)
+{
+    <h1>Exam not found</h1>
+    <p>The exam profile <strong>@ProfileId</strong> does not exist or has no questions.</p>
+    <a href="/exams" class="btn btn-secondary">Back to Exams</a>
+}
+else if (_state == SessionState.InProgress)
+{
+    var q = _questions[_currentIndex];
+
+    <h1>@_profile!.Name</h1>
+    <p class="text-muted">@_currentIndex of @_questions.Count answered</p>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            Question @(_currentIndex + 1) of @_questions.Count
+            <span class="badge bg-secondary ms-2">@q.Type</span>
+            <span class="badge bg-info ms-1">@q.Difficulty</span>
+            @if (!string.IsNullOrEmpty(q.TopicTag))
+            {
+                <span class="badge bg-light text-dark ms-1">@q.TopicTag</span>
+            }
+        </div>
+        <div class="card-body">
+            <p class="card-text fs-5">@q.Prompt</p>
+
+            @if (q.Type == QuestionType.MultipleChoice)
+            {
+                <p class="text-muted fst-italic">Select all that apply.</p>
+            }
+
+            <div class="list-group mt-3">
+                @for (int i = 0; i < q.Options.Count; i++)
+                {
+                    var optionIndex = i;
+                    var isSelected = _answers.TryGetValue(q.Id, out var sel) && sel.Contains(optionIndex);
+
+                    @if (q.Type == QuestionType.SingleChoice)
+                    {
+                        <label class="list-group-item list-group-item-action @(isSelected ? "active" : "")">
+                            <input type="radio"
+                                   name="q_@q.Id"
+                                   class="me-2"
+                                   checked="@isSelected"
+                                   @onchange="() => SelectSingle(q.Id, optionIndex)" />
+                            @q.Options[optionIndex]
+                        </label>
+                    }
+                    else
+                    {
+                        <label class="list-group-item list-group-item-action @(isSelected ? "active" : "")">
+                            <input type="checkbox"
+                                   class="me-2"
+                                   checked="@isSelected"
+                                   @onchange="() => ToggleMulti(q.Id, optionIndex)" />
+                            @q.Options[optionIndex]
+                        </label>
+                    }
+                }
+            </div>
+        </div>
+        <div class="card-footer d-flex justify-content-between">
+            <button class="btn btn-outline-secondary"
+                    disabled="@(_currentIndex == 0)"
+                    @onclick="Prev">Previous</button>
+
+            @if (_currentIndex < _questions.Count - 1)
+            {
+                <button class="btn btn-primary" @onclick="Next">Next</button>
+            }
+            else
+            {
+                <button class="btn btn-success" @onclick="Submit">Submit</button>
+            }
+        </div>
+    </div>
+}
+else if (_state == SessionState.Submitted)
+{
+    <h1>@_profile!.Name — Results</h1>
+
+    <div class="card mb-4">
+        <div class="card-body text-center">
+            <h2 class="display-4">@_score / @_questions.Count</h2>
+            <p class="lead">@((_score * 100 / _questions.Count))% correct</p>
+        </div>
+    </div>
+
+    <h4 class="mt-4">Review</h4>
+
+    @for (int qi = 0; qi < _questions.Count; qi++)
+    {
+        var q = _questions[qi];
+        var userSel = _answers.TryGetValue(q.Id, out var s) ? s : new List<int>();
+        var correct = new HashSet<int>(q.CorrectOptionIndices);
+        var userSet = new HashSet<int>(userSel);
+        var isCorrect = correct.SetEquals(userSet);
+
+        <div class="card mb-3 border-@(isCorrect ? "success" : "danger")">
+            <div class="card-header bg-@(isCorrect ? "success" : "danger") text-white">
+                Q@(qi + 1): @(isCorrect ? "Correct" : "Incorrect")
+            </div>
+            <div class="card-body">
+                <p class="fw-bold">@q.Prompt</p>
+                <ul class="list-unstyled">
+                    @for (int oi = 0; oi < q.Options.Count; oi++)
+                    {
+                        var optIdx = oi;
+                        var wasSelected = userSet.Contains(optIdx);
+                        var isCorrectOpt = correct.Contains(optIdx);
+
+                        <li class="@(isCorrectOpt ? "text-success fw-semibold" : wasSelected ? "text-danger text-decoration-line-through" : "")">
+                            @(wasSelected ? "☑" : "☐") @q.Options[optIdx]
+                            @if (isCorrectOpt) { <span class="ms-1">✓</span> }
+                        </li>
+                    }
+                </ul>
+                @if (q.Explanation is not null)
+                {
+                    <p class="text-muted mt-2"><em>@q.Explanation</em></p>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="mt-3">
+        <a href="/exams/@ProfileId" class="btn btn-primary me-2">Retake</a>
+        <a href="/exams" class="btn btn-outline-secondary">Back to Exams</a>
+    </div>
+}
+
+@code {
+    [Parameter] public string ProfileId { get; set; } = string.Empty;
+
+    private enum SessionState { Loading, NotFound, InProgress, Submitted }
+
+    private SessionState _state = SessionState.Loading;
+    private ExamProfile? _profile;
+    private List<Question> _questions = [];
+    private int _currentIndex;
+    private readonly Dictionary<Guid, List<int>> _answers = new();
+    private int _score;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _profile = await DbContext.ExamProfiles.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == ProfileId);
+
+        if (_profile is null)
+        {
+            _state = SessionState.NotFound;
+            return;
+        }
+
+        _questions = await DbContext.Questions.AsNoTracking()
+            .Where(q => q.ExamProfileId == ProfileId)
+            .OrderBy(q => q.TopicTag).ThenBy(q => q.Id)
+            .ToListAsync();
+
+        if (_questions.Count == 0)
+        {
+            _state = SessionState.NotFound;
+            return;
+        }
+
+        _state = SessionState.InProgress;
+    }
+
+    private void SelectSingle(Guid questionId, int optionIndex)
+    {
+        _answers[questionId] = [optionIndex];
+    }
+
+    private void ToggleMulti(Guid questionId, int optionIndex)
+    {
+        if (!_answers.TryGetValue(questionId, out var list))
+        {
+            list = [];
+            _answers[questionId] = list;
+        }
+
+        if (list.Contains(optionIndex))
+            list.Remove(optionIndex);
+        else
+            list.Add(optionIndex);
+    }
+
+    private void Next() => _currentIndex++;
+
+    private void Prev() => _currentIndex--;
+
+    private void Submit()
+    {
+        _score = 0;
+        foreach (var q in _questions)
+        {
+            var userSel = _answers.TryGetValue(q.Id, out var s) ? s : new List<int>();
+            var correct = new HashSet<int>(q.CorrectOptionIndices);
+            if (correct.SetEquals(new HashSet<int>(userSel)))
+                _score++;
+        }
+        _state = SessionState.Submitted;
+    }
+}
