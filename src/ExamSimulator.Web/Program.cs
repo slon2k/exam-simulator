@@ -30,17 +30,33 @@ logger.LogInformation("ConnectionStrings:DefaultConnection present: {Present}, s
 
 if (!app.Configuration.GetValue<bool>("SkipMigrations"))
 {
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<ExamSimulatorDbContext>();
-    if (db.Database.IsRelational())
+    try
     {
-        if (app.Environment.IsDevelopment())
-            db.Database.EnsureDeleted();
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ExamSimulatorDbContext>();
+        if (db.Database.IsRelational())
+        {
+            if (app.Environment.IsDevelopment())
+                db.Database.EnsureDeleted();
 
-        db.Database.Migrate();
+            db.Database.Migrate();
 
-        if (app.Environment.IsDevelopment())
-            DbSeeder.Seed(db);
+            if (app.Environment.IsDevelopment())
+                DbSeeder.Seed(db);
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Migration failed — app will start without applying migrations");
+        // Write to persistent storage so the error survives the container restart
+        var logDir = "/home/LogFiles/Application";
+        try
+        {
+            Directory.CreateDirectory(logDir);
+            File.WriteAllText(Path.Combine(logDir, "migration-error.txt"),
+                $"[{DateTime.UtcNow:O}] Migration failed:\n{ex}");
+        }
+        catch { /* ignore write failures */ }
     }
 }
 
