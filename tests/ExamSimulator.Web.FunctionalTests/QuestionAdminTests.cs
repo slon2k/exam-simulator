@@ -54,9 +54,11 @@ public class QuestionAdminTests : IClassFixture<WebApplicationFactory<Program>>
         var question = new Question(
             Guid.NewGuid(),
             "az-204",
+            QuestionType.SingleChoice,
+            Difficulty.Medium,
             "What is Azure App Service?",
             ["A PaaS offering", "An IaaS offering", "A SaaS offering", "A FaaS offering"],
-            0,
+            [0],
             "app-service");
 
         db.Questions.Add(question);
@@ -68,7 +70,9 @@ public class QuestionAdminTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal("az-204", saved.ExamProfileId);
         Assert.Equal("What is Azure App Service?", saved.Prompt);
         Assert.Equal(4, saved.Options.Count);
-        Assert.Equal(0, saved.CorrectOptionIndex);
+        Assert.Equal([0], saved.CorrectOptionIndices);
         Assert.Equal("app-service", saved.TopicTag);
+        Assert.Equal(QuestionType.SingleChoice, saved.Type);
+        Assert.Equal(Difficulty.Medium, saved.Difficulty);
     }
 }

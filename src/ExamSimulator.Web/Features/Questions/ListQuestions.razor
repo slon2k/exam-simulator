@@ -39,7 +39,7 @@ else
                     <td>@q.Prompt</td>
                     <td>@q.TopicTag</td>
                     <td>@q.Options.Count</td>
-                    <td>@q.Options[q.CorrectOptionIndex]</td>
+                    <td>@string.Join(", ", q.CorrectOptionIndices.Select(i => q.Options[i]))</td>
                 </tr>
             }
         </tbody>

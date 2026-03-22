@@ -82,9 +82,11 @@
             var question = new Question(
                 Guid.NewGuid(),
                 _model.ExamProfileId,
+                QuestionType.SingleChoice,
+                Difficulty.Medium,
                 _model.Prompt,
                 _model.Options,
-                _model.CorrectOptionIndex,
+                [_model.CorrectOptionIndex],
                 _model.TopicTag);
 
             DbContext.Questions.Add(question);
