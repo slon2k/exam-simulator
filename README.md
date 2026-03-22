@@ -14,14 +14,15 @@ ExamSimulator is a .NET-based exam preparation platform focused on fast delivery
 
 ```text
 src/
-  ExamSimulator.Web/
-  ExamSimulator.Domain/
-  ExamSimulator.Infrastructure/
+  ExamSimulator.Web/          # Blazor Server app (VSA — features, domain, infrastructure as folders)
 tests/
-  ExamSimulator.Domain.UnitTests/
+  ExamSimulator.Web.UnitTests/
   ExamSimulator.Web.FunctionalTests/
-docs/adr/
+docs/
+  adr/                        # Architecture Decision Records
+  operations/                 # Deployment and environment setup guides
 infra/
+  bicep/                      # Bicep IaC (modules + environment param files)
 ```
 
 ## Getting started

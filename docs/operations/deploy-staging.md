@@ -88,3 +88,24 @@ https://app-exam-simulator-stg.azurewebsites.net
 ```
 
 Check the App Service logs in the Azure Portal under **Diagnose and solve problems → Application logs** if the app does not start.
+
+## Validating Bicep before deploying
+
+Run these commands locally before triggering a deployment to catch template errors early.
+
+**Syntax check (no Azure connection required):**
+
+```powershell
+az bicep build --file infra/bicep/main.bicep
+```
+
+**Pre-flight validation (requires Azure login and the resource group to exist):**
+
+```powershell
+az deployment group validate `
+  --resource-group rg-exam-simulator-stg `
+  --template-file infra/bicep/main.bicep `
+  --parameters infra/bicep/environments/staging/staging.bicepparam
+```
+
+A successful validation returns a JSON object with `"provisioningState": "Succeeded"`. Any errors are shown with details before anything is deployed.
