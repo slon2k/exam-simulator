@@ -43,6 +43,7 @@ module appSvc 'modules/appservice.bicep' = {
     skuName: appServiceSkuName
     skuTier: appServiceSkuTier
     keyVaultName: keyVaultName
+    aspNetCoreEnvironment: 'Staging'
   }
 }
 

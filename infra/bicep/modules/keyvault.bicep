@@ -11,8 +11,8 @@ param appServicePrincipalId string
 param sqlConnectionString string
 
 // Key Vault Secrets User built-in role
-var kvSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'
-var connectionStringSecretName = 'ConnectionStrings--DefaultConnection'
+var kvSecretsUserRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')
+var connectionStringSecretName = 'sql-connection-string'
 
 resource kv 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: name
@@ -42,7 +42,7 @@ resource kvSecretsUserRoleAssignment 'Microsoft.Authorization/roleAssignments@20
   scope: kv
   name: guid(kv.id, appServicePrincipalId, kvSecretsUserRoleId)
   properties: {
-    roleDefinitionId: '/subscriptions/${subscription().subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/${kvSecretsUserRoleId}'
+    roleDefinitionId: kvSecretsUserRoleId
     principalId: appServicePrincipalId
     principalType: 'ServicePrincipal'
   }

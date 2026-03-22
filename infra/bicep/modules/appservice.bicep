@@ -16,7 +16,10 @@ param skuTier string = 'Basic'
 param keyVaultName string
 
 @description('Name of the Key Vault secret containing the database connection string.')
-param connectionStringSecretName string = 'ConnectionStrings--DefaultConnection'
+param connectionStringSecretName string = 'sql-connection-string'
+
+@description('Value for ASPNETCORE_ENVIRONMENT app setting.')
+param aspNetCoreEnvironment string = 'Production'
 
 resource plan 'Microsoft.Web/serverFarms@2023-12-01' = {
   name: planName
@@ -43,10 +46,16 @@ resource app 'Microsoft.Web/sites@2023-12-01' = {
     siteConfig: {
       linuxFxVersion: 'DOTNETCORE|10.0'
       minTlsVersion: '1.2'
+      appSettings: [
+        {
+          name: 'ASPNETCORE_ENVIRONMENT'
+          value: aspNetCoreEnvironment
+        }
+      ]
       connectionStrings: [
         {
           name: 'DefaultConnection'
-          connectionString: '@Microsoft.KeyVault(VaultName=${keyVaultName};SecretName=${connectionStringSecretName})'
+          connectionString: '@Microsoft.KeyVault(SecretUri=https://${keyVaultName}.vault.azure.net/secrets/${connectionStringSecretName}/)'
           type: 'SQLAzure'
         }
       ]
