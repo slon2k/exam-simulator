@@ -5,7 +5,7 @@
 namespace ExamSimulator.Web.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class SyncModelSnapshot : Migration
+    public partial class FixSnapshot : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

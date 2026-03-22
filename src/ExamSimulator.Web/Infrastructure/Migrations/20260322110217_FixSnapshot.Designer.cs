@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ExamSimulator.Web.Infrastructure.Migrations
 {
     [DbContext(typeof(ExamSimulatorDbContext))]
-    [Migration("20260322103840_SyncModelSnapshot")]
-    partial class SyncModelSnapshot
+    [Migration("20260322110217_FixSnapshot")]
+    partial class FixSnapshot
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
