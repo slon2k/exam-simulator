@@ -1,6 +1,5 @@
 using '../../main.bicep'
 
-param location = 'eastus'
 param appServicePlanName = 'plan-exam-simulator-prd'
 param appName = 'app-exam-simulator-prd'
 param sqlServerName = 'sql-exam-simulator-prd'
