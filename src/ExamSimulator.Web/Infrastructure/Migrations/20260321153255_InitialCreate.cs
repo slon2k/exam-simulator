@@ -15,12 +15,12 @@ namespace ExamSimulator.Web.Infrastructure.Migrations
                 name: "Questions",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    ExamProfileId = table.Column<string>(type: "TEXT", nullable: false),
-                    Prompt = table.Column<string>(type: "TEXT", nullable: false),
-                    Options = table.Column<string>(type: "TEXT", nullable: false),
-                    CorrectOptionIndex = table.Column<int>(type: "INTEGER", nullable: false),
-                    TopicTag = table.Column<string>(type: "TEXT", nullable: false)
+                    Id = table.Column<Guid>(nullable: false),
+                    ExamProfileId = table.Column<string>(nullable: false),
+                    Prompt = table.Column<string>(nullable: false),
+                    Options = table.Column<string>(nullable: false),
+                    CorrectOptionIndex = table.Column<int>(nullable: false),
+                    TopicTag = table.Column<string>(nullable: false)
                 },
                 constraints: table =>
                 {

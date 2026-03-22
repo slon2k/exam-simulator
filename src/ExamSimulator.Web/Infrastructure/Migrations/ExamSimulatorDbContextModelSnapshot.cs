@@ -20,27 +20,21 @@ namespace ExamSimulator.Web.Infrastructure.Migrations
             modelBuilder.Entity("ExamSimulator.Web.Domain.Questions.Question", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .ValueGeneratedOnAdd();
 
-                    b.Property<int>("CorrectOptionIndex")
-                        .HasColumnType("INTEGER");
+                    b.Property<int>("CorrectOptionIndex");
 
                     b.Property<string>("ExamProfileId")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                        .IsRequired();
 
                     b.Property<string>("Options")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                        .IsRequired();
 
                     b.Property<string>("Prompt")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                        .IsRequired();
 
                     b.Property<string>("TopicTag")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                        .IsRequired();
 
                     b.HasKey("Id");
 
