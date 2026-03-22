@@ -68,6 +68,9 @@ public sealed class Question
         if (type == QuestionType.SingleChoice && indexList.Count != 1)
             throw new ArgumentException("Single choice questions must have exactly one correct option.", nameof(correctOptionIndices));
 
+        if (type == QuestionType.Ordering && indexList.Count != optionList.Count)
+            throw new ArgumentException("Ordering questions must have one index per option (a full permutation).", nameof(correctOptionIndices));
+
         Id = id;
         ExamProfileId = examProfileId.Trim();
         Type = type;

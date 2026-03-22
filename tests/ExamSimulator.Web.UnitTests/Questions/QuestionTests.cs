@@ -169,6 +169,61 @@ public class QuestionTests
         Assert.Equal("correctOptionIndices", ex.ParamName);
     }
 
+    // ── ordering invariants ───────────────────────────────────────────────────
+
+    private static Question Ordering(string[]? options = null, int[]? correctIndices = null)
+    {
+        var opts = options ?? ["First", "Second", "Third", "Fourth"];
+        var idx = correctIndices ?? Enumerable.Range(0, opts.Length).ToArray();
+        return new(Guid.NewGuid(), "az-204", QuestionType.Ordering, Difficulty.Medium,
+            "Arrange in order", opts, idx, "ordering");
+    }
+
+    [Fact]
+    public void Constructor_Ordering_WithFullPermutation_CreatesQuestion()
+    {
+        var question = Ordering(correctIndices: [3, 0, 2, 1]);
+
+        Assert.Equal(QuestionType.Ordering, question.Type);
+        Assert.Equal([3, 0, 2, 1], question.CorrectOptionIndices);
+    }
+
+    [Fact]
+    public void Constructor_Ordering_WithFewerIndicesThanOptions_ThrowsArgumentException()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            Ordering(correctIndices: [0, 1, 2])); // 4 options, only 3 indices
+
+        Assert.Equal("correctOptionIndices", ex.ParamName);
+    }
+
+    [Fact]
+    public void Constructor_Ordering_WithMoreIndicesThanOptions_ThrowsArgumentException()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            Ordering(options: ["A", "B", "C"], correctIndices: [0, 1, 2, 0])); // 3 options, 4 indices
+
+        Assert.Equal("correctOptionIndices", ex.ParamName);
+    }
+
+    [Fact]
+    public void Constructor_Ordering_WithDuplicateIndices_ThrowsArgumentException()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            Ordering(options: ["A", "B", "C"], correctIndices: [0, 0, 2]));
+
+        Assert.Equal("correctOptionIndices", ex.ParamName);
+    }
+
+    [Fact]
+    public void Constructor_Ordering_WithOutOfRangeIndex_ThrowsArgumentOutOfRangeException()
+    {
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Ordering(options: ["A", "B", "C"], correctIndices: [0, 1, 5]));
+
+        Assert.Equal("correctOptionIndices", ex.ParamName);
+    }
+
     // ── shared option/prompt invariants ───────────────────────────────────────
 
     [Fact]

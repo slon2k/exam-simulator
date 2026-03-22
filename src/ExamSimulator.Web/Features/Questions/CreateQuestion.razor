@@ -40,6 +40,12 @@
                        @onchange="() => SetType(QuestionType.MultipleChoice)" />
                 <label class="form-check-label" for="typeMultiple">Multiple Choice</label>
             </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" id="typeOrdering" name="questionType"
+                       checked="@(_model.Type == QuestionType.Ordering)"
+                       @onchange="() => SetType(QuestionType.Ordering)" />
+                <label class="form-check-label" for="typeOrdering">Ordering</label>
+            </div>
         </div>
     </div>
 
@@ -71,31 +77,43 @@
             {
                 <small class="text-muted ms-1">(select the correct answer)</small>
             }
-            else
+            else if (_model.Type == QuestionType.MultipleChoice)
             {
                 <small class="text-muted ms-1">(select all correct answers)</small>
+            }
+            else
+            {
+                <small class="text-muted ms-1">(arrange options in the correct order)</small>
             }
         </label>
         @for (int i = 0; i < _model.Options.Count; i++)
         {
             var index = i;
             <div class="input-group mb-2">
-                <div class="input-group-text">
-                    @if (_model.Type == QuestionType.SingleChoice)
-                    {
-                        <input type="radio" name="correctOption"
-                               checked="@(_model.CorrectOptionIndex == index)"
-                               @onchange="() => _model.CorrectOptionIndex = index"
-                               title="Mark as correct" />
-                    }
-                    else
-                    {
-                        <input type="checkbox"
-                               checked="@_model.SelectedIndices.Contains(index)"
-                               @onchange="e => ToggleIndex(index, (bool)e.Value!)"
-                               title="Mark as correct" />
-                    }
-                </div>
+                @if (_model.Type == QuestionType.Ordering)
+                {
+                    <button type="button" class="btn btn-outline-secondary" @onclick="() => MoveOptionUp(index)" disabled="@(index == 0)" title="Move up">↑</button>
+                    <button type="button" class="btn btn-outline-secondary" @onclick="() => MoveOptionDown(index)" disabled="@(index == _model.Options.Count - 1)" title="Move down">↓</button>
+                }
+                else
+                {
+                    <div class="input-group-text">
+                        @if (_model.Type == QuestionType.SingleChoice)
+                        {
+                            <input type="radio" name="correctOption"
+                                   checked="@(_model.CorrectOptionIndex == index)"
+                                   @onchange="() => _model.CorrectOptionIndex = index"
+                                   title="Mark as correct" />
+                        }
+                        else
+                        {
+                            <input type="checkbox"
+                                   checked="@_model.SelectedIndices.Contains(index)"
+                                   @onchange="e => ToggleIndex(index, (bool)e.Value!)"
+                                   title="Mark as correct" />
+                        }
+                    </div>
+                }
                 <input type="text" class="form-control" value="@_model.Options[index]"
                        @oninput="e => _model.Options[index] = e.Value?.ToString() ?? string.Empty"
                        placeholder="Option @(index + 1)" />
@@ -162,6 +180,18 @@
             _model.SelectedIndices.Remove(index);
     }
 
+    private void MoveOptionUp(int index)
+    {
+        if (index <= 0) return;
+        (_model.Options[index - 1], _model.Options[index]) = (_model.Options[index], _model.Options[index - 1]);
+    }
+
+    private void MoveOptionDown(int index)
+    {
+        if (index >= _model.Options.Count - 1) return;
+        (_model.Options[index], _model.Options[index + 1]) = (_model.Options[index + 1], _model.Options[index]);
+    }
+
     private async Task HandleSubmit()
     {
         _errorMessage = null;
@@ -169,7 +199,9 @@
         {
             IEnumerable<int> correctIndices = _model.Type == QuestionType.SingleChoice
                 ? [_model.CorrectOptionIndex]
-                : _model.SelectedIndices.Order();
+                : _model.Type == QuestionType.Ordering
+                    ? Enumerable.Range(0, _model.Options.Count)
+                    : _model.SelectedIndices.Order();
 
             var question = new Question(
                 Guid.NewGuid(),
