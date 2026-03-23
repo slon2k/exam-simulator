@@ -57,7 +57,13 @@ public static class DbSeeder
                     "Restart the App Service to apply the updated application settings"
                 ],
                 [0, 1, 2, 3], "keyvault",
-                "The identity must exist before you can assign a role to it. The role must be in place before the Key Vault reference resolves. The app setting takes effect only after the service restarts and re-reads configuration.")
+                "The identity must exist before you can assign a role to it. The role must be in place before the Key Vault reference resolves. The app setting takes effect only after the service restarts and re-reads configuration."),
+
+            new Question(Guid.NewGuid(), "az-204", QuestionType.BuildList, Difficulty.Medium,
+                "From the list below, identify the valid **Azure Blob Storage access tiers** and arrange them in order of **increasing storage cost per GB** (cheapest storage first).\n\n*Not all items in the list are valid access tiers.*",
+                ["Hot", "Cool", "Cold", "Archive", "Warm", "Premium"],
+                [3, 2, 1, 0], "storage",
+                "Azure Blob Storage has four access tiers: **Archive** (cheapest to store, most expensive to read), **Cold**, **Cool**, and **Hot** (most expensive to store, cheapest to read).\n\n`Warm` and `Premium` are not standard Blob Storage access tiers.")
         );
 
         db.SaveChanges();
