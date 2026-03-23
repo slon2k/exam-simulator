@@ -63,7 +63,14 @@ public static class DbSeeder
                 "From the list below, identify the valid **Azure Blob Storage access tiers** and arrange them in order of **increasing storage cost per GB** (cheapest storage first).\n\n*Not all items in the list are valid access tiers.*",
                 ["Hot", "Cool", "Cold", "Archive", "Warm", "Premium"],
                 [3, 2, 1, 0], "storage",
-                "Azure Blob Storage has four access tiers: **Archive** (cheapest to store, most expensive to read), **Cold**, **Cool**, and **Hot** (most expensive to store, cheapest to read).\n\n`Warm` and `Premium` are not standard Blob Storage access tiers.")
+                "Azure Blob Storage has four access tiers: **Archive** (cheapest to store, most expensive to read), **Cold**, **Cool**, and **Hot** (most expensive to store, cheapest to read).\n\n`Warm` and `Premium` are not standard Blob Storage access tiers."),
+
+            new Question(Guid.NewGuid(), "az-204", QuestionType.Matching, Difficulty.Medium,
+                "Match each **Azure messaging service** with its primary delivery guarantee.",
+                ["Azure Service Bus", "Azure Event Hubs", "Azure Event Grid", "Azure Queue Storage"],
+                [0, 1, 2, 3], "messaging",
+                "**Service Bus** → at-least-once (with duplicate detection for exactly-once). **Event Hubs** → at-least-once, ordered within a partition. **Event Grid** → at-least-once with retry policy. **Queue Storage** → at-least-once, no ordering guarantees.",
+                ["At-least-once, ordered within a partition (streaming)", "At-least-once with configurable retry (event-driven)", "At-least-once with duplicate detection option (messaging)", "At-least-once, no ordering guarantees (simple queuing)"])
         );
 
         db.SaveChanges();

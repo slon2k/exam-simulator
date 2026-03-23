@@ -16,6 +16,8 @@ public sealed class Question
 
     public IReadOnlyList<int> CorrectOptionIndices { get; private set; } = null!;
 
+    public IReadOnlyList<string>? MatchingTargets { get; private set; }
+
     public string? Explanation { get; private set; }
 
     public string TopicTag { get; private set; } = null!;
@@ -31,7 +33,8 @@ public sealed class Question
         IEnumerable<string> options,
         IEnumerable<int> correctOptionIndices,
         string topicTag,
-        string? explanation = null)
+        string? explanation = null,
+        IEnumerable<string>? matchingTargets = null)
     {
         if (id == Guid.Empty)
             throw new ArgumentException("Question id cannot be empty.", nameof(id));
@@ -79,6 +82,22 @@ public sealed class Question
                 throw new ArgumentException("BuildList answer must be a proper subset of the options pool.", nameof(correctOptionIndices));
         }
 
+        if (type == QuestionType.Matching)
+        {
+            if (matchingTargets is null)
+                throw new ArgumentNullException(nameof(matchingTargets), "Matching questions require matching targets.");
+            var targetList = matchingTargets.ToList();
+            if (targetList.Count < optionList.Count)
+                throw new ArgumentException("Matching targets must have at least as many entries as premises.", nameof(matchingTargets));
+            if (targetList.Any(string.IsNullOrWhiteSpace))
+                throw new ArgumentException("Each matching target must contain text.", nameof(matchingTargets));
+            if (indexList.Count != optionList.Count)
+                throw new ArgumentException("Matching questions must have one correct pairing per premise.", nameof(correctOptionIndices));
+            if (indexList.Any(i => i < 0 || i >= targetList.Count))
+                throw new ArgumentOutOfRangeException(nameof(correctOptionIndices), "All pairing indices must be within the matching targets range.");
+            MatchingTargets = targetList.Select(static t => t.Trim()).ToArray();
+        }
+
         Id = id;
         ExamProfileId = examProfileId.Trim();
         Type = type;
@@ -90,3 +109,4 @@ public sealed class Question
         Explanation = string.IsNullOrWhiteSpace(explanation) ? null : explanation.Trim();
     }
 }
+
