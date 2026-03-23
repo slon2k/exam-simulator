@@ -44,6 +44,7 @@
             <Authorized>
                 <div class="nav-item px-3">
                     <form method="post" action="/Identity/Account/Logout">
+                        <AntiforgeryToken />
                         <input type="hidden" name="returnUrl" value="/" />
                         <button type="submit" class="nav-link btn btn-link">
                             <span class="bi bi-box-arrow-right-nav-menu" aria-hidden="true"></span> Log out
