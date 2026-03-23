@@ -14,6 +14,7 @@ ExamSimulator is a .NET-based exam preparation platform.
 ## Features
 
 - Admin CRUD for Questions and Exam Profiles (Admin role required)
+- Bulk question import via JSON file upload (Admin role required)
 - Five question types: Single Choice, Multiple Choice, Ordering, Build List, Matching
 - Learner exam-taking flow: pick a profile → answer questions → submit → see score
 - Authentication: register, log in, log out via built-in Identity UI

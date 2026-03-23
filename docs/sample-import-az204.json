@@ -1,0 +1,57 @@
+{
+  "examProfileId": "az-204",
+  "questions": [
+    {
+      "id": "a1b2c3d4-0001-0001-0001-000000000336",
+      "type": "MultipleChoice",
+      "difficulty": "Medium",
+      "prompt": "You develop and deploy an ASP.NET Core application that connects to an Azure Database for MySQL instance. Connections to the database appear to drop intermittently and the application code does not handle the connection failure. You need to handle the transient connection errors in code by implementing retries. What are three possible ways to achieve this goal? Each correct answer presents part of the solution.",
+      "options": [
+        "Increase connection repeat attempts exponentially up to 120 seconds.",
+        "Close the database connection and immediately report an error.",
+        "Wait five seconds before repeating the connection attempt to the database.",
+        "Disable connection pooling and configure a second Azure Database for MySQL instance.",
+        "Set a maximum number of connection attempts to 10 and report an error on subsequent connections."
+      ],
+      "correctOptionIndices": [0, 2, 4],
+      "topicTag": "azure-mysql",
+      "explanation": null,
+      "matchingTargets": null
+    },
+    {
+      "id": "a1b2c3d4-0001-0001-0001-000000000344",
+      "type": "MultipleChoice",
+      "difficulty": "Medium",
+      "prompt": "You are developing a .NET web application that stores data in Azure Cosmos DB. The application must use the Core API and allow millions of reads and writes. The Azure Cosmos DB account has been created with multiple write regions enabled. The application has been deployed to the East US2 and Central US regions. You need to update the application to support multi-region writes. What are two possible ways to achieve this goal? Each correct answer presents part of the solution.",
+      "options": [
+        "Update the ConnectionPolicy class for the Cosmos client and populate the PreferredLocations property based on the geo-proximity of the application.",
+        "Update Azure Cosmos DB to use the Strong consistency level. Add indexed properties to the container to indicate region.",
+        "Update the ConnectionPolicy class for the Cosmos client and set the UseMultipleWriteLocations property to true.",
+        "Create and deploy a custom conflict resolution policy.",
+        "Update Azure Cosmos DB to use the Session consistency level. Send the SessionToken property value from the FeedResponse object of the write action to the end-user by using a cookie."
+      ],
+      "correctOptionIndices": [2, 3],
+      "topicTag": "cosmos-db",
+      "explanation": null,
+      "matchingTargets": null
+    },
+    {
+      "id": "a1b2c3d4-0001-0001-0001-000000000360",
+      "type": "MultipleChoice",
+      "difficulty": "Medium",
+      "prompt": "You are developing an Azure App Service web app. The web app must securely store session information in Azure Redis Cache. You need to connect the web app to Azure Redis Cache. Which three Azure Redis Cache properties should you use? Each correct answer presents part of the solution.",
+      "options": [
+        "SSL port",
+        "Subscription name",
+        "Location",
+        "Host name",
+        "Access key",
+        "Subscription id"
+      ],
+      "correctOptionIndices": [0, 3, 4],
+      "topicTag": "azure-cache-redis",
+      "explanation": "See: https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-web-app-howto",
+      "matchingTargets": null
+    }
+  ]
+}
