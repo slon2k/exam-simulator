@@ -1,11 +1,22 @@
 using ExamSimulator.Web.Components;
+using ExamSimulator.Web.Domain.Identity;
 using ExamSimulator.Web.Infrastructure;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
+    {
+        options.SignIn.RequireConfirmedAccount = false;
+    })
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<ExamSimulatorDbContext>();
+
+builder.Services.AddAuthorizationBuilder();
 
 builder.Services.AddDbContext<ExamSimulatorDbContext>(options =>
 {
@@ -31,7 +42,11 @@ if (!app.Configuration.GetValue<bool>("SkipMigrations"))
             db.Database.Migrate();
 
             if (app.Environment.IsDevelopment())
-                DbSeeder.Seed(db);
+            {
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                await DbSeeder.SeedAsync(db, userManager, roleManager, app.Configuration);
+            }
         }
     }
     catch (Exception ex)
@@ -59,11 +74,16 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+app.MapRazorPages();
 
 app.Run();
 
