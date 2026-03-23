@@ -32,13 +32,13 @@ public class QuestionAdminTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task ListQuestions_ReturnsSuccessStatusCode()
+    public async Task ListQuestions_WhenUnauthenticated_RedirectsToLogin()
     {
-        var client = _factory.CreateClient();
+        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
         var response = await client.GetAsync("/questions");
 
-        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(System.Net.HttpStatusCode.Redirect, response.StatusCode);
     }
 
     [Fact]
