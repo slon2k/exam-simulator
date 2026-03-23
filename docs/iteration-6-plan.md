@@ -147,7 +147,7 @@ tests/
 
 ### Phase 2: Dev Admin Seeding
 
-**Closes:** #48
+**Closes:** #51
 
 **Changes:**
 - Add `"Seeding": { "AdminPassword": "Dev@dmin1!" }` to `appsettings.Development.json`.
@@ -164,7 +164,7 @@ tests/
 
 ### Phase 3: Protect Routes
 
-**Closes:** #49
+**Closes:** #48
 
 **Changes:**
 - Add `@attribute [Authorize]` to all exam session Razor components.
@@ -195,7 +195,7 @@ tests/
 
 ### Phase 5: Functional Tests
 
-**Closes:** #51
+**Closes:** #49
 
 **Changes:**
 - Update existing `QuestionAdminTests` HTTP tests:
