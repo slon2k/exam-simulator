@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using ExamSimulator.Web.Domain.Questions;
 using ExamSimulator.Web.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -31,7 +32,8 @@ public sealed class QuestionImportService(
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        Converters = { new JsonStringEnumConverter() }
     };
 
     public async Task<(ImportPreview? Preview, string? Error)> ParseAndValidateAsync(Stream fileStream)
