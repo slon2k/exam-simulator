@@ -1,5 +1,6 @@
 using ExamSimulator.Web.Components;
 using ExamSimulator.Web.Domain.Identity;
+using ExamSimulator.Web.Features.Questions.Import;
 using ExamSimulator.Web.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,9 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     .AddEntityFrameworkStores<ExamSimulatorDbContext>();
 
 builder.Services.AddAuthorizationBuilder();
+
+builder.Services.AddScoped<QuestionImportValidator>();
+builder.Services.AddScoped<QuestionImportService>();
 
 builder.Services.AddDbContext<ExamSimulatorDbContext>(options =>
 {

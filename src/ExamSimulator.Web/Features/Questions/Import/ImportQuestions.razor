@@ -1,0 +1,180 @@
+@page "/questions/import"
+@attribute [Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+
+@inject QuestionImportService ImportService
+@inject NavigationManager Nav
+
+<PageTitle>Import Questions</PageTitle>
+
+<h1>Import Questions</h1>
+
+@if (_fileError is not null)
+{
+    <div class="alert alert-danger">@_fileError</div>
+}
+
+@if (_successMessage is not null)
+{
+    <div class="alert alert-success">@_successMessage</div>
+}
+
+@if (_preview is null)
+{
+    <div class="card" style="max-width: 480px;">
+        <div class="card-body">
+            <p class="card-text text-muted">
+                Select a <code>.json</code> file matching the import schema. All questions will be
+                validated before any data is written.
+            </p>
+            <InputFile OnChange="OnFileSelected" accept=".json" class="form-control" disabled="@_loading" />
+            @if (_loading)
+            {
+                <p class="mt-2 text-muted"><em>Parsing&hellip;</em></p>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="mb-3">
+        <span class="badge bg-success me-1">@_preview.ValidCount valid</span>
+        <span class="badge bg-danger me-1">@_preview.InvalidCount invalid</span>
+        <span class="badge bg-secondary">@_preview.DuplicateCount duplicate</span>
+    </div>
+
+    <table class="table table-sm table-bordered">
+        <thead class="table-light">
+            <tr>
+                <th>#</th>
+                <th>Type</th>
+                <th>Prompt</th>
+                <th>Status</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in _preview.Items)
+            {
+                <tr>
+                    <td>@row.Index</td>
+                    <td>@row.Item.Type</td>
+                    <td>@Truncate(row.Item.Prompt, 60)</td>
+                    <td>
+                        @switch (row.Status)
+                        {
+                            case ImportItemStatus.Valid:
+                                <span class="badge bg-success">Valid</span>
+                                break;
+                            case ImportItemStatus.Invalid:
+                                <span class="badge bg-danger">Invalid</span>
+                                break;
+                            case ImportItemStatus.Duplicate:
+                                <span class="badge bg-secondary">Duplicate</span>
+                                break;
+                        }
+                    </td>
+                    <td>
+                        @if (row.Status == ImportItemStatus.Invalid)
+                        {
+                            <ul class="mb-0 ps-3">
+                                @foreach (var err in row.Errors)
+                                {
+                                    <li>@err</li>
+                                }
+                            </ul>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary" disabled="@(!_preview.CanImport || _loading)"
+                @onclick="CommitImport">
+            @if (_loading)
+            {
+                <span>Importing&hellip;</span>
+            }
+            else
+            {
+                <span>Import @_preview.ValidCount question(s)</span>
+            }
+        </button>
+        <button class="btn btn-outline-secondary" disabled="@_loading"
+                @onclick="Reset">
+            Choose a different file
+        </button>
+    </div>
+
+    @if (!_preview.CanImport && _preview.InvalidCount > 0)
+    {
+        <p class="text-danger mt-2">Fix the invalid questions before importing.</p>
+    }
+}
+
+<div class="mt-3">
+    <a href="/questions" class="btn btn-link ps-0">&larr; Back to questions</a>
+</div>
+
+@code {
+    private ImportPreview? _preview;
+    private string? _fileError;
+    private string? _successMessage;
+    private bool _loading;
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        _fileError = null;
+        _preview = null;
+        _successMessage = null;
+        _loading = true;
+
+        try
+        {
+            // Limit to 5 MB
+            await using var stream = e.File.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+            var (preview, error) = await ImportService.ParseAndValidateAsync(stream);
+            if (error is not null)
+                _fileError = error;
+            else
+                _preview = preview;
+        }
+        catch (Exception ex)
+        {
+            _fileError = $"Could not read file: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task CommitImport()
+    {
+        if (_preview is null) return;
+        _loading = true;
+        try
+        {
+            var count = await ImportService.CommitAsync(_preview);
+            Nav.NavigateTo($"/questions?imported={count}");
+        }
+        catch (Exception ex)
+        {
+            _fileError = $"Import failed: {ex.Message}";
+            _loading = false;
+        }
+    }
+
+    private void Reset()
+    {
+        _preview = null;
+        _fileError = null;
+        _successMessage = null;
+    }
+
+    private static string Truncate(string? s, int max) =>
+        s is null ? string.Empty :
+        s.Length <= max ? s : s[..max] + "…";
+}
