@@ -76,6 +76,8 @@ tests/
 
 ### Phase 1: BuildList Question Type
 
+**Closes:** #37, #38, #39
+
 Steps:
 
 1. Add `BuildList = 3` to `Domain/Questions/QuestionType.cs`.
@@ -113,11 +115,13 @@ Steps:
 - In exam session: build the correct answer → submit → marked correct. Build the wrong subset or wrong order → marked incorrect.
 - `dotnet build` succeeds with 0 errors.
 
-**Commit:** `feat: BuildList question type — domain invariant, admin UI, session render + scoring`
+**Commit:** `feat: BuildList question type — domain invariant, admin UI, session render + scoring (#37 #38 #39)`
 
 ---
 
 ### Phase 2: Matching Question Type
+
+**Closes:** #40, #41, #42
 
 Steps:
 
@@ -189,11 +193,13 @@ Steps:
 - In exam session: select all correct pairings → submit → marked correct. Change one pairing → marked incorrect.
 - `dotnet build` succeeds with 0 errors.
 
-**Commit:** `feat: Matching question type — domain model, MatchingTargets migration, admin UI, session render + scoring`
+**Commit:** `feat: Matching question type — domain model, MatchingTargets migration, admin UI, session render + scoring (#40 #41 #42)`
 
 ---
 
 ### Phase 3: Seeder Updates
+
+**Closes:** #43
 
 Steps:
 
@@ -207,11 +213,13 @@ Steps:
    - 3 premises (services), 4 responses (use cases, 1 distractor).
    - Explanation: brief Markdown summary.
 
-**Commit:** `feat: add BuildList and Matching seed questions`
+**Commit:** `feat: add BuildList and Matching seed questions (#43)`
 
 ---
 
 ### Phase 4: Tests
+
+**Closes:** #44
 
 Steps:
 
@@ -238,4 +246,4 @@ Steps:
 
 - `dotnet test` — all existing 32 tests pass + new tests pass.
 
-**Commit:** `test: BuildList and Matching question unit and functional tests`
+**Commit:** `test: BuildList and Matching question unit and functional tests (#44)`
