@@ -1,17 +1,21 @@
 using ExamSimulator.Web.Domain.ExamProfiles;
+using ExamSimulator.Web.Domain.Identity;
 using ExamSimulator.Web.Domain.Questions;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace ExamSimulator.Web.Infrastructure;
 
-public class ExamSimulatorDbContext(DbContextOptions<ExamSimulatorDbContext> options) : DbContext(options)
+public class ExamSimulatorDbContext(DbContextOptions<ExamSimulatorDbContext> options) : IdentityDbContext<ApplicationUser>(options)
 {
     public DbSet<ExamProfile> ExamProfiles => Set<ExamProfile>();
     public DbSet<Question> Questions => Set<Question>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
         modelBuilder.Entity<ExamProfile>(entity =>
         {
             entity.HasKey(p => p.Id);
