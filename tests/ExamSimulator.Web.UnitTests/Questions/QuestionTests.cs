@@ -292,4 +292,143 @@ public class QuestionTests
 
         Assert.Equal("id", ex.ParamName);
     }
+
+    // ── buildlist invariants ───────────────────────────────────────────────────
+
+    private static Question BuildList(string[]? options = null, int[]? correctIndices = null)
+    {
+        var opts = options ?? ["Item A", "Item B", "Item C", "Item D", "Item E"];
+        var idx = correctIndices ?? [0, 2, 4];
+        return new(Guid.NewGuid(), "az-204", QuestionType.BuildList, Difficulty.Medium,
+            "Build the correct list in order.", opts, idx, "build-list");
+    }
+
+    [Fact]
+    public void Constructor_BuildList_WithValidSubset_CreatesQuestion()
+    {
+        var question = BuildList();
+
+        Assert.Equal(QuestionType.BuildList, question.Type);
+        Assert.Equal(5, question.Options.Count);
+        Assert.Equal([0, 2, 4], question.CorrectOptionIndices);
+    }
+
+    [Fact]
+    public void Constructor_BuildList_WithAnswerCountLessThanTwo_ThrowsArgumentException()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            BuildList(correctIndices: [0]));
+
+        Assert.Equal("correctOptionIndices", ex.ParamName);
+    }
+
+    [Fact]
+    public void Constructor_BuildList_WithAnswerCountEqualToPoolCount_ThrowsArgumentException()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            BuildList(options: ["A", "B", "C"], correctIndices: [0, 1, 2]));
+
+        Assert.Equal("correctOptionIndices", ex.ParamName);
+    }
+
+    [Fact]
+    public void Constructor_BuildList_WithDuplicateIndex_ThrowsArgumentException()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            BuildList(correctIndices: [0, 0, 2]));
+
+        Assert.Equal("correctOptionIndices", ex.ParamName);
+    }
+
+    [Fact]
+    public void Constructor_BuildList_WithOutOfRangeIndex_ThrowsArgumentOutOfRangeException()
+    {
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            BuildList(options: ["A", "B", "C", "D"], correctIndices: [0, 1, 9]));
+
+        Assert.Equal("correctOptionIndices", ex.ParamName);
+    }
+
+    // ── matching invariants ────────────────────────────────────────────────────
+
+    private static Question Matching(
+        string[]? options = null,
+        string[]? matchingTargets = null,
+        int[]? correctIndices = null)
+    {
+        var opts = options ?? ["Premise 1", "Premise 2", "Premise 3"];
+        var tgts = matchingTargets ?? ["Target A", "Target B", "Target C", "Distractor X"];
+        var idx = correctIndices ?? [0, 1, 2];
+        return new(Guid.NewGuid(), "az-204", QuestionType.Matching, Difficulty.Medium,
+            "Match each item to its description.", opts, idx, "matching",
+            matchingTargets: tgts);
+    }
+
+    [Fact]
+    public void Constructor_Matching_WithValidInput_CreatesQuestion()
+    {
+        var question = Matching();
+
+        Assert.Equal(QuestionType.Matching, question.Type);
+        Assert.Equal(3, question.Options.Count);
+        Assert.NotNull(question.MatchingTargets);
+        Assert.Equal(4, question.MatchingTargets.Count);
+        Assert.Equal([0, 1, 2], question.CorrectOptionIndices);
+    }
+
+    [Fact]
+    public void Constructor_Matching_WithNullMatchingTargets_ThrowsArgumentNullException()
+    {
+        var ex = Assert.Throws<ArgumentNullException>(() =>
+            new Question(Guid.NewGuid(), "az-204", QuestionType.Matching, Difficulty.Medium,
+                "Match items.", ["A", "B", "C"], [0, 1, 2], "matching",
+                matchingTargets: null));
+
+        Assert.Equal("matchingTargets", ex.ParamName);
+    }
+
+    [Fact]
+    public void Constructor_Matching_WithFewerTargetsThanPremises_ThrowsArgumentException()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            Matching(options: ["P1", "P2", "P3"], matchingTargets: ["T1", "T2"], correctIndices: [0, 1, 2]));
+
+        Assert.Equal("matchingTargets", ex.ParamName);
+    }
+
+    [Fact]
+    public void Constructor_Matching_WithBlankTarget_ThrowsArgumentException()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            Matching(matchingTargets: ["Target A", " ", "Target C", "Target D"], correctIndices: [0, 1, 2]));
+
+        Assert.Equal("matchingTargets", ex.ParamName);
+    }
+
+    [Fact]
+    public void Constructor_Matching_WithWrongPairingCount_ThrowsArgumentException()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            Matching(correctIndices: [0, 1])); // 3 premises but only 2 pairings
+
+        Assert.Equal("correctOptionIndices", ex.ParamName);
+    }
+
+    [Fact]
+    public void Constructor_Matching_WithOutOfRangePairingIndex_ThrowsArgumentOutOfRangeException()
+    {
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Matching(correctIndices: [0, 1, 9]));
+
+        Assert.Equal("correctOptionIndices", ex.ParamName);
+    }
+
+    [Fact]
+    public void Constructor_Matching_WithDuplicatePairingIndex_ThrowsArgumentException()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            Matching(correctIndices: [0, 0, 2])); // T0 matched to both P1 and P2
+
+        Assert.Equal("correctOptionIndices", ex.ParamName);
+    }
 }

@@ -202,4 +202,68 @@ public class QuestionAdminTests : IClassFixture<WebApplicationFactory<Program>>
 
         Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
     }
+
+    [Fact]
+    public async Task CreateBuildListQuestion_WhenSaved_SubsetPersistedCorrectly()
+    {
+        var options = new DbContextOptionsBuilder<ExamSimulatorDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var db = new ExamSimulatorDbContext(options);
+
+        var question = new Question(
+            Guid.NewGuid(),
+            "az-204",
+            QuestionType.BuildList,
+            Difficulty.Medium,
+            "Arrange the steps to deploy an Azure Function app.",
+            ["Create resource group", "Create Function App", "Write code", "Configure app settings", "Deploy"],
+            [0, 1, 4],
+            "azure-functions");
+
+        db.Questions.Add(question);
+        await db.SaveChangesAsync();
+
+        var saved = await db.Questions.FindAsync(question.Id);
+
+        Assert.NotNull(saved);
+        Assert.Equal(QuestionType.BuildList, saved.Type);
+        Assert.Equal(5, saved.Options.Count);
+        Assert.Equal([0, 1, 4], saved.CorrectOptionIndices);
+        Assert.True(saved.CorrectOptionIndices.Count < saved.Options.Count);
+    }
+
+    [Fact]
+    public async Task CreateMatchingQuestion_WhenSaved_MatchingTargetsAndPairsPersistedCorrectly()
+    {
+        var options = new DbContextOptionsBuilder<ExamSimulatorDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+
+        await using var db = new ExamSimulatorDbContext(options);
+
+        var question = new Question(
+            Guid.NewGuid(),
+            "az-204",
+            QuestionType.Matching,
+            Difficulty.Hard,
+            "Match each Azure service to its primary purpose.",
+            ["Azure Blob Storage", "Azure SQL Database", "Azure Service Bus"],
+            [0, 1, 2],
+            "azure-services",
+            matchingTargets: ["Object storage for unstructured data", "Relational database as a service", "Enterprise message broker", "Distractor: Virtual networking"]);
+
+        db.Questions.Add(question);
+        await db.SaveChangesAsync();
+
+        var saved = await db.Questions.FindAsync(question.Id);
+
+        Assert.NotNull(saved);
+        Assert.Equal(QuestionType.Matching, saved.Type);
+        Assert.Equal(3, saved.Options.Count);
+        Assert.NotNull(saved.MatchingTargets);
+        Assert.Equal(4, saved.MatchingTargets.Count);
+        Assert.Equal([0, 1, 2], saved.CorrectOptionIndices);
+    }
 }
