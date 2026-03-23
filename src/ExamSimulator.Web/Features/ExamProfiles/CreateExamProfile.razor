@@ -1,4 +1,5 @@
 @page "/exam-profiles/create"
+@attribute [Authorize(Roles = "Admin")]
 @rendermode InteractiveServer
 
 @using System.Text.RegularExpressions

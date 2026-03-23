@@ -1,11 +1,48 @@
 using ExamSimulator.Web.Domain.ExamProfiles;
+using ExamSimulator.Web.Domain.Identity;
 using ExamSimulator.Web.Domain.Questions;
+using Microsoft.AspNetCore.Identity;
 
 namespace ExamSimulator.Web.Infrastructure;
 
 public static class DbSeeder
 {
-    public static void Seed(ExamSimulatorDbContext db)
+    public static async Task SeedAsync(
+        ExamSimulatorDbContext db,
+        UserManager<ApplicationUser> userManager,
+        RoleManager<IdentityRole> roleManager,
+        IConfiguration configuration)
+    {
+        await SeedIdentityAsync(userManager, roleManager, configuration);
+        SeedQuestions(db);
+    }
+
+    private static async Task SeedIdentityAsync(
+        UserManager<ApplicationUser> userManager,
+        RoleManager<IdentityRole> roleManager,
+        IConfiguration configuration)
+    {
+        const string adminRole = "Admin";
+        const string adminEmail = "admin@examsimulator.local";
+
+        if (!await roleManager.RoleExistsAsync(adminRole))
+            await roleManager.CreateAsync(new IdentityRole(adminRole));
+
+        if (await userManager.FindByEmailAsync(adminEmail) is null)
+        {
+            var password = configuration["Seeding:AdminPassword"] ?? "Dev@dmin1!";
+            var admin = new ApplicationUser
+            {
+                UserName = adminEmail,
+                Email = adminEmail,
+                EmailConfirmed = true
+            };
+            await userManager.CreateAsync(admin, password);
+            await userManager.AddToRoleAsync(admin, adminRole);
+        }
+    }
+
+    private static void SeedQuestions(ExamSimulatorDbContext db)
     {
         if (!db.ExamProfiles.Any())
         {
@@ -75,4 +112,7 @@ public static class DbSeeder
 
         db.SaveChanges();
     }
+
+    // Keep the synchronous overload for callers that seed questions only (tests, etc.)
+    public static void Seed(ExamSimulatorDbContext db) => SeedQuestions(db);
 }

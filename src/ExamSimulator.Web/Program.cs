@@ -16,7 +16,7 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ExamSimulatorDbContext>();
 
-builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddAuthorizationBuilder();
 
 builder.Services.AddDbContext<ExamSimulatorDbContext>(options =>
 {
@@ -42,7 +42,11 @@ if (!app.Configuration.GetValue<bool>("SkipMigrations"))
             db.Database.Migrate();
 
             if (app.Environment.IsDevelopment())
-                DbSeeder.Seed(db);
+            {
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                await DbSeeder.SeedAsync(db, userManager, roleManager, app.Configuration);
+            }
         }
     }
     catch (Exception ex)

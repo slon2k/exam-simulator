@@ -14,35 +14,56 @@
             </NavLink>
         </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="exams" Match="NavLinkMatch.Prefix">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Take an Exam
-            </NavLink>
-        </div>
+        <AuthorizeView>
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="exams" Match="NavLinkMatch.Prefix">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Take an Exam
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="questions" Match="NavLinkMatch.Prefix">
-                <span class="bi bi-question-circle-fill-nav-menu" aria-hidden="true"></span> Questions
-            </NavLink>
-        </div>
+        <AuthorizeView Roles="Admin">
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="questions" Match="NavLinkMatch.Prefix">
+                        <span class="bi bi-question-circle-fill-nav-menu" aria-hidden="true"></span> Questions
+                    </NavLink>
+                </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="exam-profiles" Match="NavLinkMatch.Prefix">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Exam Profiles
-            </NavLink>
-        </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="exam-profiles" Match="NavLinkMatch.Prefix">
+                        <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Exam Profiles
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
+        <AuthorizeView>
+            <Authorized>
+                <div class="nav-item px-3">
+                    <form method="post" action="/Identity/Account/Logout">
+                        <input type="hidden" name="returnUrl" value="/" />
+                        <button type="submit" class="nav-link btn btn-link">
+                            <span class="bi bi-box-arrow-right-nav-menu" aria-hidden="true"></span> Log out
+                        </button>
+                    </form>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/Identity/Account/Login">
+                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> Log in
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="/Identity/Account/Register">
+                        <span class="bi bi-person-plus-fill-nav-menu" aria-hidden="true"></span> Register
+                    </NavLink>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
     </nav>
 </div>
 
