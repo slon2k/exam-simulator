@@ -53,6 +53,15 @@ public class ExamSimulatorDbContext(DbContextOptions<ExamSimulatorDbContext> opt
                     (a, b) => a != null && b != null && a.SequenceEqual(b),
                     indices => indices.Aggregate(0, (hash, item) => HashCode.Combine(hash, item.GetHashCode())),
                     indices => indices.ToList()));
+            entity.Property(q => q.MatchingTargets)
+                .IsRequired(false)
+                .HasConversion(
+                    targets => targets == null ? null : System.Text.Json.JsonSerializer.Serialize(targets, (System.Text.Json.JsonSerializerOptions?)null),
+                    json => json == null ? null : System.Text.Json.JsonSerializer.Deserialize<List<string>>(json, (System.Text.Json.JsonSerializerOptions?)null)!)
+                .Metadata.SetValueComparer(new ValueComparer<IReadOnlyList<string>?>(
+                    (a, b) => (a == null && b == null) || (a != null && b != null && a.SequenceEqual(b)),
+                    t => t == null ? 0 : t.Aggregate(0, (hash, item) => HashCode.Combine(hash, item.GetHashCode())),
+                    t => t == null ? null : (IReadOnlyList<string>)t.ToList()));
         });
     }
 }
