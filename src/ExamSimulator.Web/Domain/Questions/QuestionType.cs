@@ -4,5 +4,6 @@ public enum QuestionType
 {
     SingleChoice = 0,
     MultipleChoice = 1,
-    Ordering = 2
+    Ordering = 2,
+    BuildList = 3
 }

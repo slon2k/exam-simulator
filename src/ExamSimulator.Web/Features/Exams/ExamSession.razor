@@ -46,7 +46,65 @@ else if (_state == SessionState.InProgress)
             {
                 <p class="text-muted fst-italic">Arrange the options in the correct order.</p>
             }
+            else if (q.Type == QuestionType.BuildList)
+            {
+                <p class="text-muted fst-italic">Select items in the correct order to build the list.</p>
+            }
 
+            @if (q.Type == QuestionType.BuildList)
+            {
+                var buildListAnswer = _answers.TryGetValue(q.Id, out var bla) ? bla : new List<int>();
+                <div class="row mt-3 g-3">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header">Available</div>
+                            <div class="list-group list-group-flush">
+                                @for (int i = 0; i < q.Options.Count; i++)
+                                {
+                                    var optIdx = i;
+                                    if (!buildListAnswer.Contains(optIdx))
+                                    {
+                                        <button type="button" class="list-group-item list-group-item-action"
+                                                @onclick="() => AddToBuildList(q.Id, optIdx)">
+                                            @q.Options[optIdx]
+                                        </button>
+                                    }
+                                }
+                                @if (q.Options.Count == buildListAnswer.Count)
+                                {
+                                    <div class="list-group-item text-muted fst-italic">All items added.</div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header">Your Answer</div>
+                            <div class="list-group list-group-flush">
+                                @if (buildListAnswer.Count == 0)
+                                {
+                                    <div class="list-group-item text-muted fst-italic">Click items on the left to add them.</div>
+                                }
+                                @for (int i = 0; i < buildListAnswer.Count; i++)
+                                {
+                                    var pos = i;
+                                    var optIdx = buildListAnswer[pos];
+                                    <div class="list-group-item d-flex align-items-center gap-2">
+                                        <div class="d-flex flex-column">
+                                            <button class="btn btn-sm btn-outline-secondary py-0" @onclick="() => MoveUp(q.Id, pos)" disabled="@(pos == 0)" title="Move up">&#8593;</button>
+                                            <button class="btn btn-sm btn-outline-secondary py-0" @onclick="() => MoveDown(q.Id, pos)" disabled="@(pos == buildListAnswer.Count - 1)" title="Move down">&#8595;</button>
+                                        </div>
+                                        <span class="flex-grow-1">@q.Options[optIdx]</span>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveFromBuildList(q.Id, pos)" title="Remove">&times;</button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
             <div class="list-group mt-3">
                 @for (int i = 0; i < q.Options.Count; i++)
                 {
@@ -88,6 +146,7 @@ else if (_state == SessionState.InProgress)
                     }
                 }
             </div>
+            }
         </div>
         <div class="card-footer d-flex justify-content-between">
             <button class="btn btn-outline-secondary"
@@ -124,7 +183,7 @@ else if (_state == SessionState.Submitted)
         var userSel = _answers.TryGetValue(q.Id, out var s) ? s : new List<int>();
         var correct = new HashSet<int>(q.CorrectOptionIndices);
         var userSet = new HashSet<int>(userSel);
-        var isCorrect = q.Type == QuestionType.Ordering
+        var isCorrect = (q.Type == QuestionType.Ordering || q.Type == QuestionType.BuildList)
             ? q.CorrectOptionIndices.SequenceEqual(userSel)
             : correct.SetEquals(userSet);
 
@@ -149,6 +208,36 @@ else if (_state == SessionState.Submitted)
                                 @if (placedCorrectly) { <span class="ms-1">✓</span> }
                                 else { <span class="ms-1 text-muted fst-italic">(expected: @q.Options[correctAtPos])</span> }
                             </li>
+                        }
+                    }
+                    else if (q.Type == QuestionType.BuildList)
+                    {
+                        var buildListReview = _answers.TryGetValue(q.Id, out var bl) ? bl : new List<int>();
+                        @if (buildListReview.Count == 0)
+                        {
+                            <li class="text-danger">No answer provided.</li>
+                        }
+                        @for (int oi = 0; oi < buildListReview.Count; oi++)
+                        {
+                            var pos = oi;
+                            var userOptIdx = buildListReview[pos];
+                            var correctAtPos = pos < q.CorrectOptionIndices.Count ? (int?)q.CorrectOptionIndices[pos] : null;
+                            var placedCorrectly = correctAtPos.HasValue && correctAtPos.Value == userOptIdx;
+                            <li class="@(placedCorrectly ? "text-success fw-semibold" : "text-danger")">
+                                @(pos + 1). @q.Options[userOptIdx]
+                                @if (placedCorrectly) { <span class="ms-1">✓</span> }
+                                else if (correctAtPos.HasValue) { <span class="ms-1 text-muted fst-italic">(expected: @q.Options[correctAtPos.Value])</span> }
+                                else { <span class="ms-1 text-muted fst-italic">(not in correct answer)</span> }
+                            </li>
+                        }
+                        @if (buildListReview.Count < q.CorrectOptionIndices.Count)
+                        {
+                            @for (int oi = buildListReview.Count; oi < q.CorrectOptionIndices.Count; oi++)
+                            {
+                                var pos = oi;
+                                var correctOptIdx = q.CorrectOptionIndices[pos];
+                                <li class="text-danger fst-italic">@(pos + 1). (missing: @q.Options[correctOptIdx])</li>
+                            }
                         }
                     }
                     else
@@ -219,6 +308,9 @@ else if (_state == SessionState.Submitted)
         foreach (var q in _questions.Where(q => q.Type == QuestionType.Ordering))
             _answers[q.Id] = Enumerable.Range(0, q.Options.Count).OrderBy(_ => Random.Shared.Next()).ToList();
 
+        foreach (var q in _questions.Where(q => q.Type == QuestionType.BuildList))
+            _answers[q.Id] = [];
+
         _state = SessionState.InProgress;
     }
 
@@ -257,13 +349,30 @@ else if (_state == SessionState.Submitted)
         (order[position], order[position + 1]) = (order[position + 1], order[position]);
     }
 
+    private void AddToBuildList(Guid questionId, int optionIndex)
+    {
+        if (!_answers.TryGetValue(questionId, out var list))
+        {
+            list = [];
+            _answers[questionId] = list;
+        }
+        if (!list.Contains(optionIndex))
+            list.Add(optionIndex);
+    }
+
+    private void RemoveFromBuildList(Guid questionId, int position)
+    {
+        if (_answers.TryGetValue(questionId, out var list) && position >= 0 && position < list.Count)
+            list.RemoveAt(position);
+    }
+
     private void Submit()
     {
         _score = 0;
         foreach (var q in _questions)
         {
             var userSel = _answers.TryGetValue(q.Id, out var s) ? s : new List<int>();
-            if (q.Type == QuestionType.Ordering)
+            if (q.Type == QuestionType.Ordering || q.Type == QuestionType.BuildList)
             {
                 if (q.CorrectOptionIndices.SequenceEqual(userSel))
                     _score++;

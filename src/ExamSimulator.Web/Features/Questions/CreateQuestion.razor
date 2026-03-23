@@ -46,6 +46,12 @@
                        @onchange="() => SetType(QuestionType.Ordering)" />
                 <label class="form-check-label" for="typeOrdering">Ordering</label>
             </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" id="typeBuildList" name="questionType"
+                       checked="@(_model.Type == QuestionType.BuildList)"
+                       @onchange="() => SetType(QuestionType.BuildList)" />
+                <label class="form-check-label" for="typeBuildList">Build List</label>
+            </div>
         </div>
     </div>
 
@@ -81,6 +87,10 @@
             {
                 <small class="text-muted ms-1">(select all correct answers)</small>
             }
+            else if (_model.Type == QuestionType.BuildList)
+            {
+                <small class="text-muted ms-1">(define the pool of items — use "Add →" to build the answer)</small>
+            }
             else
             {
                 <small class="text-muted ms-1">(arrange options in the correct order)</small>
@@ -94,6 +104,13 @@
                 {
                     <button type="button" class="btn btn-outline-secondary" @onclick="() => MoveOptionUp(index)" disabled="@(index == 0)" title="Move up">↑</button>
                     <button type="button" class="btn btn-outline-secondary" @onclick="() => MoveOptionDown(index)" disabled="@(index == _model.Options.Count - 1)" title="Move down">↓</button>
+                }
+                else if (_model.Type == QuestionType.BuildList)
+                {
+                    <button type="button" class="btn btn-outline-primary btn-sm"
+                            @onclick="() => AddToAnswer(index)"
+                            disabled="@(_model.BuildListAnswer.Contains(index))"
+                            title="Add to answer">Add →</button>
                 }
                 else
                 {
@@ -125,6 +142,28 @@
         }
         <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="AddOption">+ Add Option</button>
     </div>
+
+    @if (_model.Type == QuestionType.BuildList)
+    {
+        <div class="mb-3">
+            <label class="form-label fw-semibold">Answer <small class="text-muted fw-normal">(ordered — must be a proper subset of the pool)</small></label>
+            @if (_model.BuildListAnswer.Count == 0)
+            {
+                <p class="text-muted">No items added yet. Use "Add →" above.</p>
+            }
+            @for (int i = 0; i < _model.BuildListAnswer.Count; i++)
+            {
+                var ansIdx = i;
+                var optIdx = _model.BuildListAnswer[ansIdx];
+                <div class="input-group mb-2">
+                    <button type="button" class="btn btn-outline-secondary" @onclick="() => MoveAnswerUp(ansIdx)" disabled="@(ansIdx == 0)" title="Move up">↑</button>
+                    <button type="button" class="btn btn-outline-secondary" @onclick="() => MoveAnswerDown(ansIdx)" disabled="@(ansIdx == _model.BuildListAnswer.Count - 1)" title="Move down">↓</button>
+                    <span class="form-control">@_model.Options[optIdx]</span>
+                    <button type="button" class="btn btn-outline-danger" @onclick="() => RemoveFromAnswer(ansIdx)" title="Remove from answer">✕</button>
+                </div>
+            }
+        </div>
+    }
 
     <div class="mb-3">
         <label class="form-label">Explanation <span class="text-muted">(optional)</span></label>
@@ -164,12 +203,16 @@
             _model.SelectedIndices.Remove(i);
             _model.SelectedIndices.Add(i - 1);
         }
+        _model.BuildListAnswer.RemoveAll(i => i == index);
+        for (int i = 0; i < _model.BuildListAnswer.Count; i++)
+            if (_model.BuildListAnswer[i] > index) _model.BuildListAnswer[i]--;
     }
 
     private void SetType(QuestionType type)
     {
         _model.Type = type;
         _model.SelectedIndices.Clear();
+        _model.BuildListAnswer.Clear();
     }
 
     private void ToggleIndex(int index, bool isChecked)
@@ -192,6 +235,26 @@
         (_model.Options[index], _model.Options[index + 1]) = (_model.Options[index + 1], _model.Options[index]);
     }
 
+    private void AddToAnswer(int optionIndex)
+    {
+        if (!_model.BuildListAnswer.Contains(optionIndex))
+            _model.BuildListAnswer.Add(optionIndex);
+    }
+
+    private void MoveAnswerUp(int ansIdx)
+    {
+        if (ansIdx <= 0) return;
+        (_model.BuildListAnswer[ansIdx - 1], _model.BuildListAnswer[ansIdx]) = (_model.BuildListAnswer[ansIdx], _model.BuildListAnswer[ansIdx - 1]);
+    }
+
+    private void MoveAnswerDown(int ansIdx)
+    {
+        if (ansIdx >= _model.BuildListAnswer.Count - 1) return;
+        (_model.BuildListAnswer[ansIdx], _model.BuildListAnswer[ansIdx + 1]) = (_model.BuildListAnswer[ansIdx + 1], _model.BuildListAnswer[ansIdx]);
+    }
+
+    private void RemoveFromAnswer(int ansIdx) => _model.BuildListAnswer.RemoveAt(ansIdx);
+
     private async Task HandleSubmit()
     {
         _errorMessage = null;
@@ -201,7 +264,9 @@
                 ? [_model.CorrectOptionIndex]
                 : _model.Type == QuestionType.Ordering
                     ? Enumerable.Range(0, _model.Options.Count)
-                    : _model.SelectedIndices.Order();
+                    : _model.Type == QuestionType.BuildList
+                        ? _model.BuildListAnswer
+                        : _model.SelectedIndices.Order();
 
             var question = new Question(
                 Guid.NewGuid(),
@@ -235,5 +300,6 @@
         public string Explanation { get; set; } = string.Empty;
         public int CorrectOptionIndex { get; set; }
         public HashSet<int> SelectedIndices { get; set; } = [];
+        public List<int> BuildListAnswer { get; set; } = [];
     }
 }

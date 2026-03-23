@@ -71,6 +71,14 @@ public sealed class Question
         if (type == QuestionType.Ordering && indexList.Count != optionList.Count)
             throw new ArgumentException("Ordering questions must have one index per option (a full permutation).", nameof(correctOptionIndices));
 
+        if (type == QuestionType.BuildList)
+        {
+            if (indexList.Count < 2)
+                throw new ArgumentException("BuildList questions must have at least 2 items in the answer.", nameof(correctOptionIndices));
+            if (indexList.Count >= optionList.Count)
+                throw new ArgumentException("BuildList answer must be a proper subset of the options pool.", nameof(correctOptionIndices));
+        }
+
         Id = id;
         ExamProfileId = examProfileId.Trim();
         Type = type;
