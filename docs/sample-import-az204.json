@@ -52,6 +52,51 @@
       "topicTag": "azure-cache-redis",
       "explanation": "See: https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-web-app-howto",
       "matchingTargets": null
+    },
+    {
+      "id": "a1b2c3d4-0001-0001-0001-000000000401",
+      "type": "Matching",
+      "difficulty": "Medium",
+      "prompt": "Match each Azure Service Bus feature to its correct description.",
+      "options": [
+        "Queue",
+        "Topic",
+        "Subscription",
+        "Dead-letter queue"
+      ],
+      "correctOptionIndices": [0, 1, 1, 2],
+      "topicTag": "azure-service-bus",
+      "explanation": "Queues provide point-to-point delivery. Topics support publish/subscribe with multiple subscriptions. The dead-letter queue holds messages that cannot be delivered or processed.",
+      "matchingTargets": [
+        "Point-to-point messaging channel; each message is consumed by a single receiver.",
+        "Publish/subscribe channel; messages are broadcast to all registered receivers.",
+        "A named filter view of a topic; each subscriber receives its own copy of matching messages.",
+        "Holds messages that cannot be delivered or that exceed the maximum delivery count."
+      ]
+    },
+    {
+      "id": "a1b2c3d4-0001-0001-0001-000000000402",
+      "type": "Matching",
+      "difficulty": "Hard",
+      "prompt": "Match each Azure storage or data service to its primary data model.",
+      "options": [
+        "Azure Blob Storage",
+        "Azure Table Storage",
+        "Azure Cosmos DB (NoSQL API)",
+        "Azure SQL Database"
+      ],
+      "correctOptionIndices": [0, 2, 3, 5],
+      "topicTag": "azure-storage",
+      "explanation": "Blob Storage is for unstructured binary/text objects. Table Storage uses a flat key-value model. Cosmos DB NoSQL uses schema-free JSON documents. Azure SQL Database is a fully managed relational engine.",
+      "matchingTargets": [
+        "Relational tables with rows and columns, enforced schema, ACID transactions.",
+        "Key-value pairs with a partition key and row key; no relationships or joins.",
+        "Unstructured binary and text objects (blobs) organized in containers.",
+        "Graph nodes and edges for relationship traversal queries.",
+        "Time-series telemetry data with built-in retention policies.",
+        "Schema-free JSON documents with flexible indexing and global distribution.",
+        "In-memory key-value cache with optional persistence."
+      ]
     }
   ]
 }
