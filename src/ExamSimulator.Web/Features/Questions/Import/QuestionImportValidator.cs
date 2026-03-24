@@ -113,8 +113,8 @@ public sealed class QuestionImportValidator
             return;
         }
 
-        if (item.MatchingTargets.Count < item.Options!.Count)
-            errors.Add("Matching: matchingTargets must have at least as many entries as options (premises).");
+        if (item.MatchingTargets.Count < 2)
+            errors.Add("Matching: at least 2 matching targets are required.");
 
         if (item.MatchingTargets.Any(string.IsNullOrWhiteSpace))
             errors.Add("Matching: each matching target must contain text.");

@@ -388,12 +388,23 @@ public class QuestionTests
     }
 
     [Fact]
-    public void Constructor_Matching_WithFewerTargetsThanPremises_ThrowsArgumentException()
+    public void Constructor_Matching_WithOnlyOneTarget_ThrowsArgumentException()
     {
         var ex = Assert.Throws<ArgumentException>(() =>
-            Matching(options: ["P1", "P2", "P3"], matchingTargets: ["T1", "T2"], correctIndices: [0, 1, 2]));
+            Matching(options: ["P1", "P2", "P3"], matchingTargets: ["T1"], correctIndices: [0, 0, 0]));
 
         Assert.Equal("matchingTargets", ex.ParamName);
+    }
+
+    [Fact]
+    public void Constructor_Matching_WithFewerTargetsThanPremises_CreatesQuestion()
+    {
+        // 3 premises, 2 targets — valid because repetition is allowed
+        var question = Matching(options: ["P1", "P2", "P3"], matchingTargets: ["T1", "T2"], correctIndices: [0, 1, 0]);
+
+        Assert.Equal(3, question.Options.Count);
+        Assert.Equal(2, question.MatchingTargets!.Count);
+        Assert.Equal([0, 1, 0], question.CorrectOptionIndices);
     }
 
     [Fact]
@@ -424,11 +435,11 @@ public class QuestionTests
     }
 
     [Fact]
-    public void Constructor_Matching_WithDuplicatePairingIndex_ThrowsArgumentException()
+    public void Constructor_Matching_WithRepeatedPairingIndices_CreatesQuestion()
     {
-        var ex = Assert.Throws<ArgumentException>(() =>
-            Matching(correctIndices: [0, 0, 2])); // T0 matched to both P1 and P2
+        // Multiple premises can map to the same target (repetition allowed)
+        var question = Matching(correctIndices: [0, 0, 2]);
 
-        Assert.Equal("correctOptionIndices", ex.ParamName);
+        Assert.Equal([0, 0, 2], question.CorrectOptionIndices);
     }
 }

@@ -65,7 +65,7 @@ public sealed class Question
         if (indexList.Any(i => i < 0 || i >= optionList.Count))
             throw new ArgumentOutOfRangeException(nameof(correctOptionIndices), "All correct option indices must be within the options range.");
 
-        if (indexList.Distinct().Count() != indexList.Count)
+        if (type != QuestionType.Matching && indexList.Distinct().Count() != indexList.Count)
             throw new ArgumentException("Correct option indices must be unique.", nameof(correctOptionIndices));
 
         if (type == QuestionType.SingleChoice && indexList.Count != 1)
@@ -87,8 +87,8 @@ public sealed class Question
             if (matchingTargets is null)
                 throw new ArgumentNullException(nameof(matchingTargets), "Matching questions require matching targets.");
             var targetList = matchingTargets.ToList();
-            if (targetList.Count < optionList.Count)
-                throw new ArgumentException("Matching targets must have at least as many entries as premises.", nameof(matchingTargets));
+            if (targetList.Count < 2)
+                throw new ArgumentException("Matching questions must have at least 2 targets.", nameof(matchingTargets));
             if (targetList.Any(string.IsNullOrWhiteSpace))
                 throw new ArgumentException("Each matching target must contain text.", nameof(matchingTargets));
             if (indexList.Count != optionList.Count)
