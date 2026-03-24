@@ -55,7 +55,7 @@ The import file is a single JSON object with a top-level `examProfileId` string 
 | `questions[].correctOptionIndices` | Yes (except `Ordering`, `Matching`) | Valid indices into `options` |
 | `questions[].topicTag` | No | Optional tag string |
 | `questions[].explanation` | No | Optional markdown explanation |
-| `questions[].matchingTargets` | Only for `Matching` | List of strings matching 1-to-1 with `options` |
+| `questions[].matchingTargets` | Only for `Matching` | Pool of ≥ 2 target strings; each premise selects from this pool via dropdown; the same target may appear in multiple correct pairings |
 
 ### Deduplication Strategy
 

@@ -124,22 +124,22 @@ The learner selects a subset of options and places them in order.
 
 ### `Matching`
 
-The learner pairs each premise (left column) with a target (right column).
+The learner pairs each premise (left column) with a target (right column) using a dropdown per premise. The same target may be selected for multiple premises (repetition is allowed), so the targets act as a pool rather than a 1-to-1 set.
 
 - `options`: the **premises** (left column)
-- `matchingTargets`: the **targets** (right column); must contain **at least as many entries as options**; all must be non-empty
-- `correctOptionIndices`: one index per premise — `correctOptionIndices[i]` is the 0-based index into `matchingTargets` that premise `i` pairs with
+- `matchingTargets`: the **pool of targets** (right column); must contain **at least 2 entries**; all must be non-empty; may contain more or fewer entries than `options`
+- `correctOptionIndices`: one index per premise — `correctOptionIndices[i]` is the 0-based index into `matchingTargets` that premise `i` pairs with; the same index may appear multiple times (repetition)
 
 ```json
 {
   "type": "Matching",
-  "options": ["Premise 1", "Premise 2"],
-  "matchingTargets": ["Target A", "Target B", "Target C"],
-  "correctOptionIndices": [2, 0]
+  "options": ["Premise 1", "Premise 2", "Premise 3"],
+  "matchingTargets": ["Target A", "Target B"],
+  "correctOptionIndices": [1, 0, 1]
 }
 ```
 
-The example pairs Premise 1 → Target C, Premise 2 → Target A.
+The example pairs Premise 1 → Target B, Premise 2 → Target A, Premise 3 → Target B (Target B used twice).
 
 ---
 

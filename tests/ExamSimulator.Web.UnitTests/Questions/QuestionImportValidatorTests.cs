@@ -149,7 +149,7 @@ public class QuestionImportValidatorTests
     [Fact]
     public void Validate_MatchingWithMismatchedTargetCount_ReturnsError()
     {
-        // 3 options but only 1 target
+        // Only 1 target — at least 2 are required
         var item = MatchingItem(
             options: ["A", "B", "C"],
             targets: ["TargetA"],
@@ -157,7 +157,21 @@ public class QuestionImportValidatorTests
 
         var errors = _validator.Validate(item);
 
-        Assert.Contains(errors, e => e.Contains("matchingTargets") && e.Contains("at least as many"));
+        Assert.Contains(errors, e => e.Contains("Matching") && e.Contains("at least 2"));
+    }
+
+    [Fact]
+    public void Validate_MatchingWithFewerTargetsThanPremises_ReturnsNoErrors()
+    {
+        // 3 premises, 2 targets with repeated index — valid
+        var item = MatchingItem(
+            options: ["A", "B", "C"],
+            targets: ["T1", "T2"],
+            correctIndices: [0, 1, 0]);
+
+        var errors = _validator.Validate(item);
+
+        Assert.Empty(errors);
     }
 
     [Fact]
