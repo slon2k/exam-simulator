@@ -3,6 +3,7 @@
 @rendermode InteractiveServer
 
 @using Microsoft.EntityFrameworkCore
+@using ExamSimulator.Web.Domain.ExamProfiles
 
 @inject ExamSimulatorDbContext DbContext
 @inject IJSRuntime JS
@@ -15,6 +16,38 @@
     <a href="/questions/create" class="btn btn-primary me-2">Create Question</a>
     <a href="/questions/import" class="btn btn-outline-secondary">Import Questions</a>
 </p>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <label class="form-label">Exam Profile</label>
+        <select class="form-select" @onchange="OnProfileChanged">
+            <option value="">All profiles</option>
+            @foreach (var p in _allProfiles)
+            {
+                <option value="@p.Id">@p.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Topic Tag</label>
+        <select class="form-select" @bind="_selectedTag" @bind:after="ApplyFilters">
+            <option value="">All tags</option>
+            @foreach (var t in _availableTags)
+            {
+                <option value="@t">@t</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Difficulty</label>
+        <select class="form-select" @bind="_selectedDifficulty" @bind:after="ApplyFilters">
+            <option value="">All</option>
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+        </select>
+    </div>
+</div>
 
 @if (_questions is null)
 {
@@ -43,7 +76,7 @@ else
             @foreach (var q in _questions)
             {
                 <tr>
-                    <td>@q.ExamProfileId</td>
+                    <td>@(_profileNames.GetValueOrDefault(q.ExamProfileId, q.ExamProfileId))</td>
                     <td>@q.Prompt</td>
                     <td>@q.TopicTag</td>
                     <td>@q.Type</td>
@@ -63,10 +96,51 @@ else
 
 @code {
     private List<Question>? _questions;
+    private List<ExamProfile> _allProfiles = [];
+    private Dictionary<string, string> _profileNames = [];
+    private List<string> _availableTags = [];
+    private string _selectedProfileId = "";
+    private string _selectedTag = "";
+    private string _selectedDifficulty = "";
 
     protected override async Task OnInitializedAsync()
     {
-        _questions = await DbContext.Questions.AsNoTracking().ToListAsync();
+        _allProfiles = await DbContext.ExamProfiles.AsNoTracking().OrderBy(p => p.Name).ToListAsync();
+        _profileNames = _allProfiles.ToDictionary(p => p.Id, p => p.Name);
+        await RefreshTags();
+        await ApplyFilters();
+    }
+
+    private async Task OnProfileChanged(ChangeEventArgs e)
+    {
+        _selectedProfileId = e.Value?.ToString() ?? "";
+        _selectedTag = "";
+        await RefreshTags();
+        await ApplyFilters();
+    }
+
+    private async Task RefreshTags()
+    {
+        var query = DbContext.Questions.AsNoTracking();
+        if (!string.IsNullOrEmpty(_selectedProfileId))
+            query = query.Where(q => q.ExamProfileId == _selectedProfileId);
+        _availableTags = await query
+            .Select(q => q.TopicTag)
+            .Distinct()
+            .OrderBy(t => t)
+            .ToListAsync();
+    }
+
+    private async Task ApplyFilters()
+    {
+        var query = DbContext.Questions.AsNoTracking().AsQueryable();
+        if (!string.IsNullOrEmpty(_selectedProfileId))
+            query = query.Where(q => q.ExamProfileId == _selectedProfileId);
+        if (!string.IsNullOrEmpty(_selectedTag))
+            query = query.Where(q => q.TopicTag == _selectedTag);
+        if (!string.IsNullOrEmpty(_selectedDifficulty) && Enum.TryParse<Difficulty>(_selectedDifficulty, out var diff))
+            query = query.Where(q => q.Difficulty == diff);
+        _questions = await query.OrderBy(q => q.ExamProfileId).ThenBy(q => q.TopicTag).ThenBy(q => q.Id).ToListAsync();
     }
 
     private async Task DeleteQuestion(Question question)
