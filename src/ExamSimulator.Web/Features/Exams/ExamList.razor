@@ -3,8 +3,12 @@
 @rendermode InteractiveServer
 
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using ExamSimulator.Web.Domain.Attempts
 
 @inject ExamSimulatorDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Exams</PageTitle>
 
@@ -32,6 +36,27 @@ else
                             <p class="card-text text-muted">@row.Profile.Description</p>
                         }
                         <p class="card-text"><small class="text-muted">@row.QuestionCount question(s)</small></p>
+
+                        @if (row.RecentAttempts.Count > 0)
+                        {
+                            <div class="mt-3">
+                                <p class="mb-1"><small class="fw-semibold text-muted">Recent attempts</small></p>
+                                <table class="table table-sm mb-0">
+                                    <tbody>
+                                        @foreach (var attempt in row.RecentAttempts)
+                                        {
+                                            var pct = attempt.Total > 0 ? attempt.Score * 100 / attempt.Total : 0;
+                                            var badgeClass = pct >= 70 ? "bg-success" : pct >= 50 ? "bg-warning text-dark" : "bg-danger";
+                                            <tr>
+                                                <td class="text-muted ps-0">@attempt.TakenAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
+                                                <td>@attempt.Score / @attempt.Total</td>
+                                                <td><span class="badge @badgeClass">@pct%</span></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
                     </div>
                     <div class="card-footer">
                         @if (row.QuestionCount > 0)
@@ -60,8 +85,27 @@ else
             .Select(g => new { Id = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.Id, x => x.Count);
 
-        _profiles = profiles.Select(p => new ProfileRow(p, counts.GetValueOrDefault(p.Id))).ToList();
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        Dictionary<string, List<ExamAttempt>> attemptsByProfile = new();
+        if (userId is not null)
+        {
+            var profileIds = profiles.Select(p => p.Id).ToList();
+            var attempts = await DbContext.ExamAttempts.AsNoTracking()
+                .Where(a => a.UserId == userId && profileIds.Contains(a.ProfileId))
+                .OrderByDescending(a => a.TakenAt)
+                .ToListAsync();
+            attemptsByProfile = attempts
+                .GroupBy(a => a.ProfileId)
+                .ToDictionary(g => g.Key, g => g.Take(5).ToList());
+        }
+
+        _profiles = profiles.Select(p => new ProfileRow(
+            p,
+            counts.GetValueOrDefault(p.Id),
+            attemptsByProfile.GetValueOrDefault(p.Id, []))).ToList();
     }
 
-    private sealed record ProfileRow(ExamProfile Profile, int QuestionCount);
+    private sealed record ProfileRow(ExamProfile Profile, int QuestionCount, List<ExamAttempt> RecentAttempts);
 }
