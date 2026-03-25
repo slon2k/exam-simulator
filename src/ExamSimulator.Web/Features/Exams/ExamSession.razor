@@ -3,11 +3,16 @@
 @rendermode InteractiveServer
 
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
 @using ExamSimulator.Web.Domain.Questions
 @using ExamSimulator.Web.Domain.ExamProfiles
+@using ExamSimulator.Web.Domain.Attempts
 
 @inject ExamSimulatorDbContext DbContext
 @inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ILogger<ExamSession> Logger
 
 <PageTitle>@(_profile?.Name ?? "Exam")</PageTitle>
 
@@ -456,6 +461,7 @@ else if (_state == SessionState.Submitted)
     private int _requestedCount = 60;
     private bool _randomOrder = true;
     private bool _showReconfigureConfirm;
+    private Guid? _lastAttemptId;
 
     private int MatchingCount => _counts
         .Where(c => _selectedTags.Contains(c.Tag) && _selectedDifficulties.Contains(c.Difficulty))
@@ -627,30 +633,57 @@ else if (_state == SessionState.Submitted)
             sel[premiseIndex] = targetIndex;
     }
 
-    private void Submit()
+    private async Task Submit()
     {
         _score = 0;
+        var questionResults = new List<(Guid QuestionId, bool IsCorrect)>(_questions.Count);
         foreach (var q in _questions)
         {
             var userSel = _answers.TryGetValue(q.Id, out var s) ? s : new List<int>();
+            bool isCorrect;
             if (q.Type == QuestionType.Ordering || q.Type == QuestionType.BuildList)
-            {
-                if (q.CorrectOptionIndices.SequenceEqual(userSel))
-                    _score++;
-            }
+                isCorrect = q.CorrectOptionIndices.SequenceEqual(userSel);
             else if (q.Type == QuestionType.Matching)
-            {
-                if (ScoreMatching(q, userSel))
-                    _score++;
-            }
+                isCorrect = ScoreMatching(q, userSel);
             else
             {
                 var correct = new HashSet<int>(q.CorrectOptionIndices);
-                if (correct.SetEquals(new HashSet<int>(userSel)))
-                    _score++;
+                isCorrect = correct.SetEquals(new HashSet<int>(userSel));
             }
+            if (isCorrect) _score++;
+            questionResults.Add((q.Id, isCorrect));
         }
         _state = SessionState.Submitted;
+
+        // Persist attempt — best-effort, do not block review on failure
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId is not null)
+            {
+                var attemptId = Guid.NewGuid();
+                var attempt = new ExamAttempt(
+                    attemptId,
+                    userId,
+                    ProfileId,
+                    DateTime.UtcNow,
+                    _score,
+                    _questions.Count,
+                    _selectedTags,
+                    _selectedDifficulties.Select(d => d.ToString()),
+                    _randomOrder);
+                DbContext.ExamAttempts.Add(attempt);
+                foreach (var (questionId, isCorrect) in questionResults)
+                    DbContext.ExamAttemptAnswers.Add(new ExamAttemptAnswer(Guid.NewGuid(), attemptId, questionId, isCorrect));
+                await DbContext.SaveChangesAsync();
+                _lastAttemptId = attemptId;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to persist exam attempt for profile {ProfileId}", ProfileId);
+        }
     }
 
     private bool ScoreMatching(Question q, List<int> userSel)
