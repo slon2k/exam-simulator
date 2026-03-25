@@ -1,3 +1,4 @@
+using ExamSimulator.Web.Domain.Attempts;
 using ExamSimulator.Web.Domain.ExamProfiles;
 using ExamSimulator.Web.Domain.Identity;
 using ExamSimulator.Web.Domain.Questions;
@@ -11,6 +12,8 @@ public class ExamSimulatorDbContext(DbContextOptions<ExamSimulatorDbContext> opt
 {
     public DbSet<ExamProfile> ExamProfiles => Set<ExamProfile>();
     public DbSet<Question> Questions => Set<Question>();
+    public DbSet<ExamAttempt> ExamAttempts => Set<ExamAttempt>();
+    public DbSet<ExamAttemptAnswer> ExamAttemptAnswers => Set<ExamAttemptAnswer>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -66,6 +69,50 @@ public class ExamSimulatorDbContext(DbContextOptions<ExamSimulatorDbContext> opt
                     (a, b) => (a == null && b == null) || (a != null && b != null && a.SequenceEqual(b)),
                     t => t == null ? 0 : t.Aggregate(0, (hash, item) => HashCode.Combine(hash, item.GetHashCode())),
                     t => t == null ? null : (IReadOnlyList<string>)t.ToList()));
+        });
+
+        modelBuilder.Entity<ExamAttempt>(entity =>
+        {
+            entity.HasKey(a => a.Id);
+            entity.ToTable("ExamAttempts");
+            entity.Property(a => a.UserId).IsRequired();
+            entity.Property(a => a.ProfileId).IsRequired();
+            entity.Property(a => a.TakenAt).IsRequired();
+            entity.Property(a => a.Score).IsRequired();
+            entity.Property(a => a.Total).IsRequired();
+            entity.Property(a => a.RandomOrder).IsRequired();
+            entity.Property(a => a.Tags)
+                .IsRequired()
+                .HasConversion(
+                    tags => System.Text.Json.JsonSerializer.Serialize(tags, (System.Text.Json.JsonSerializerOptions?)null),
+                    json => System.Text.Json.JsonSerializer.Deserialize<List<string>>(json, (System.Text.Json.JsonSerializerOptions?)null)!)
+                .Metadata.SetValueComparer(new ValueComparer<IReadOnlyList<string>>(
+                    (a, b) => a != null && b != null && a.SequenceEqual(b),
+                    tags => tags.Aggregate(0, (hash, item) => HashCode.Combine(hash, item.GetHashCode())),
+                    tags => tags.ToList()));
+            entity.Property(a => a.Difficulties)
+                .IsRequired()
+                .HasConversion(
+                    difficulties => System.Text.Json.JsonSerializer.Serialize(difficulties, (System.Text.Json.JsonSerializerOptions?)null),
+                    json => System.Text.Json.JsonSerializer.Deserialize<List<string>>(json, (System.Text.Json.JsonSerializerOptions?)null)!)
+                .Metadata.SetValueComparer(new ValueComparer<IReadOnlyList<string>>(
+                    (a, b) => a != null && b != null && a.SequenceEqual(b),
+                    difficulties => difficulties.Aggregate(0, (hash, item) => HashCode.Combine(hash, item.GetHashCode())),
+                    difficulties => difficulties.ToList()));
+            entity.HasMany(a => a.Answers)
+                .WithOne()
+                .HasForeignKey(ans => ans.AttemptId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ExamAttemptAnswer>(entity =>
+        {
+            entity.HasKey(a => a.Id);
+            entity.ToTable("ExamAttemptAnswers");
+            entity.Property(a => a.AttemptId).IsRequired();
+            entity.Property(a => a.QuestionId).IsRequired();
+            entity.Property(a => a.IsCorrect).IsRequired();
+            // QuestionId is a plain column — no FK constraint so answers survive question deletion
         });
     }
 }
