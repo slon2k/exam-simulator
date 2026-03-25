@@ -3,6 +3,8 @@
 @rendermode InteractiveServer
 
 @using Microsoft.EntityFrameworkCore
+@using ExamSimulator.Web.Domain.Questions
+@using ExamSimulator.Web.Domain.ExamProfiles
 
 @inject ExamSimulatorDbContext DbContext
 @inject NavigationManager Nav
@@ -19,12 +21,113 @@ else if (_state == SessionState.NotFound)
     <p>The exam profile <strong>@ProfileId</strong> does not exist or has no questions.</p>
     <a href="/exams" class="btn btn-secondary">Back to Exams</a>
 }
+else if (_state == SessionState.Configuring)
+{
+    <h1>@_profile!.Name</h1>
+    @if (_profile.Description is not null)
+    {
+        <p class="text-muted">@_profile.Description</p>
+    }
+
+    <div class="card mb-4">
+        <div class="card-body">
+
+            <h5 class="card-title mb-3">Configure your exam session</h5>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Topic tags</label>
+                <div>
+                    @foreach (var tag in _allTags)
+                    {
+                        var t = tag;
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="tag_@t"
+                                   checked="@_selectedTags.Contains(t)"
+                                   @onchange="e => ToggleTag(t, (bool)e.Value!)" />
+                            <label class="form-check-label" for="tag_@t">@t</label>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Difficulty</label>
+                <div>
+                    @foreach (var diff in new[] { Difficulty.Easy, Difficulty.Medium, Difficulty.Hard })
+                    {
+                        var d = diff;
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="diff_@d"
+                                   checked="@_selectedDifficulties.Contains(d)"
+                                   @onchange="e => ToggleDifficulty(d, (bool)e.Value!)" />
+                            <label class="form-check-label" for="diff_@d">@d</label>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Question order</label>
+                <div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="order" id="order_random"
+                               checked="@_randomOrder"
+                               @onchange="() => _randomOrder = true" />
+                        <label class="form-check-label" for="order_random">Random</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="order" id="order_sequential"
+                               checked="@(!_randomOrder)"
+                               @onchange="() => _randomOrder = false" />
+                        <label class="form-check-label" for="order_sequential">Sequential (by topic)</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold" for="qcount">Number of questions</label>
+                <div class="d-flex align-items-center gap-3">
+                    <input type="number" id="qcount" class="form-control" style="width:120px"
+                           min="1" max="@MatchingCount"
+                           @bind="_requestedCount" @bind:event="oninput" />
+                    @if (MatchingCount > 0)
+                    {
+                        <span class="text-muted">@MatchingCount matching question(s) available</span>
+                    }
+                </div>
+            </div>
+
+            @if (MatchingCount == 0)
+            {
+                <div class="alert alert-warning">No questions match your selection. Adjust the filters.</div>
+            }
+
+        </div>
+        <div class="card-footer">
+            <button class="btn btn-primary" disabled="@(MatchingCount == 0)" @onclick="StartExam">
+                Start Exam
+            </button>
+        </div>
+    </div>
+}
 else if (_state == SessionState.InProgress)
 {
     var q = _questions[_currentIndex];
 
     <h1>@_profile!.Name</h1>
-    <p class="text-muted">@_currentIndex of @_questions.Count answered</p>
+    <p class="text-muted">
+        @_currentIndex of @_questions.Count answered
+        <button class="btn btn-sm btn-link p-0 ms-3" @onclick="RequestReconfigure">Reconfigure</button>
+    </p>
+
+    @if (_showReconfigureConfirm)
+    {
+        <div class="alert alert-warning d-flex align-items-center gap-3">
+            <span>You have answered @_currentIndex of @_questions.Count questions. Starting over will discard your progress. Continue?</span>
+            <button class="btn btn-sm btn-danger" @onclick="ConfirmReconfigure">Yes, discard</button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="() => _showReconfigureConfirm = false">Cancel</button>
+        </div>
+    }
 
     <div class="card mb-4">
         <div class="card-header">
@@ -326,7 +429,7 @@ else if (_state == SessionState.Submitted)
     }
 
     <div class="mt-3">
-        <a href="/exams/@ProfileId" class="btn btn-primary me-2">Retake</a>
+        <button class="btn btn-primary me-2" @onclick="ConfirmReconfigure">Retake</button>
         <a href="/exams" class="btn btn-outline-secondary">Back to Exams</a>
     </div>
 }
@@ -334,7 +437,7 @@ else if (_state == SessionState.Submitted)
 @code {
     [Parameter] public string ProfileId { get; set; } = string.Empty;
 
-    private enum SessionState { Loading, NotFound, InProgress, Submitted }
+    private enum SessionState { Loading, NotFound, Configuring, InProgress, Submitted }
 
     private SessionState _state = SessionState.Loading;
     private ExamProfile? _profile;
@@ -343,6 +446,20 @@ else if (_state == SessionState.Submitted)
     private readonly Dictionary<Guid, List<int>> _answers = new();
     private readonly Dictionary<Guid, List<string>> _matchingShuffled = new();
     private int _score;
+
+    // --- Config state ---
+    private record TagDifficultyCount(string Tag, Difficulty Difficulty, int Count);
+    private List<TagDifficultyCount> _counts = [];
+    private List<string> _allTags = [];
+    private HashSet<string> _selectedTags = [];
+    private HashSet<Difficulty> _selectedDifficulties = [];
+    private int _requestedCount = 60;
+    private bool _randomOrder = true;
+    private bool _showReconfigureConfirm;
+
+    private int MatchingCount => _counts
+        .Where(c => _selectedTags.Contains(c.Tag) && _selectedDifficulties.Contains(c.Difficulty))
+        .Sum(c => c.Count);
 
     protected override async Task OnInitializedAsync()
     {
@@ -355,18 +472,71 @@ else if (_state == SessionState.Submitted)
             return;
         }
 
-        _questions = await DbContext.Questions.AsNoTracking()
+        _counts = await DbContext.Questions.AsNoTracking()
             .Where(q => q.ExamProfileId == ProfileId)
-            .OrderBy(q => q.TopicTag).ThenBy(q => q.Id)
-            .ToListAsync();
+            .GroupBy(q => new { q.TopicTag, q.Difficulty })
+            .Select(g => new { g.Key.TopicTag, g.Key.Difficulty, Count = g.Count() })
+            .ToListAsync()
+            .ContinueWith(t => t.Result.Select(x => new TagDifficultyCount(x.TopicTag, x.Difficulty, x.Count)).ToList());
 
-        if (_questions.Count == 0)
+        if (_counts.Count == 0)
         {
             _state = SessionState.NotFound;
             return;
         }
 
-        _questions = _questions.OrderBy(_ => Random.Shared.Next()).ToList();
+        _allTags = _counts.Select(c => c.Tag).Distinct().OrderBy(t => t).ToList();
+        _selectedTags = [.._allTags];
+        _selectedDifficulties = [Difficulty.Easy, Difficulty.Medium, Difficulty.Hard];
+        _requestedCount = Math.Min(60, MatchingCount);
+
+        _state = SessionState.Configuring;
+    }
+
+    private void ToggleTag(string tag, bool selected)
+    {
+        if (selected) _selectedTags.Add(tag);
+        else _selectedTags.Remove(tag);
+        ClampRequestedCount();
+    }
+
+    private void ToggleDifficulty(Difficulty diff, bool selected)
+    {
+        if (selected) _selectedDifficulties.Add(diff);
+        else _selectedDifficulties.Remove(diff);
+        ClampRequestedCount();
+    }
+
+    private void ClampRequestedCount()
+    {
+        if (_requestedCount > MatchingCount)
+            _requestedCount = MatchingCount;
+    }
+
+    private async Task StartExam()
+    {
+        var query = DbContext.Questions.AsNoTracking()
+            .Where(q => q.ExamProfileId == ProfileId
+                        && _selectedTags.Contains(q.TopicTag)
+                        && _selectedDifficulties.Contains(q.Difficulty));
+
+        var pool = await query.ToListAsync();
+
+        int take = Math.Min(_requestedCount, pool.Count);
+        _questions = _randomOrder
+            ? pool.OrderBy(_ => Random.Shared.Next()).Take(take).ToList()
+            : pool.OrderBy(q => q.TopicTag).ThenBy(q => q.Id).Take(take).ToList();
+
+        if (take < _requestedCount)
+        {
+            // Clamp silently (UI already handled it, but guard against race)
+            _requestedCount = take;
+        }
+
+        _answers.Clear();
+        _matchingShuffled.Clear();
+        _currentIndex = 0;
+        _showReconfigureConfirm = false;
 
         foreach (var q in _questions.Where(q => q.Type == QuestionType.Ordering))
             _answers[q.Id] = Enumerable.Range(0, q.Options.Count).OrderBy(_ => Random.Shared.Next()).ToList();
@@ -381,6 +551,17 @@ else if (_state == SessionState.Submitted)
         }
 
         _state = SessionState.InProgress;
+    }
+
+    private void RequestReconfigure() => _showReconfigureConfirm = true;
+
+    private void ConfirmReconfigure()
+    {
+        _showReconfigureConfirm = false;
+        _answers.Clear();
+        _matchingShuffled.Clear();
+        _currentIndex = 0;
+        _state = SessionState.Configuring;
     }
 
     private void SelectSingle(Guid questionId, int optionIndex)
