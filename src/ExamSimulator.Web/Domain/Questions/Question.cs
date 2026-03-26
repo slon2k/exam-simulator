@@ -62,7 +62,7 @@ public sealed class Question
         if (indexList.Count == 0)
             throw new ArgumentException("At least one correct option index is required.", nameof(correctOptionIndices));
 
-        if (indexList.Any(i => i < 0 || i >= optionList.Count))
+        if (type != QuestionType.Matching && indexList.Any(i => i < 0 || i >= optionList.Count))
             throw new ArgumentOutOfRangeException(nameof(correctOptionIndices), "All correct option indices must be within the options range.");
 
         if (type != QuestionType.Matching && indexList.Distinct().Count() != indexList.Count)
