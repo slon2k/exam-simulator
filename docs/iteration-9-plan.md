@@ -17,7 +17,9 @@
 4. Add a `/attempts/{attemptId}` page for cold review of any historical attempt (loads from DB).
 5. Add a `/history` page listing all attempts for the current user, with an optional `?profileId=` filter.
 6. Add server-side pagination to the question admin list (25 per page).
-7. Cover new behaviour with unit and functional tests.
+7. Add **Select All / Clear All** tag shortcuts to the exam configuration UI.
+8. Add a **Start from #** field (sequential mode only) to the exam configuration UI.
+9. Cover new behaviour with unit and functional tests.
 
 ## Key Decisions
 
@@ -289,7 +291,8 @@ src/
         AttemptReview.razor            ← new page: /attempts/{attemptId}
         History.razor                  ← new page: /history[?profileId=]
       Exams/
-        ExamSession.razor              ← Submitted state expanded: toggle + review component
+        ExamSession.razor              ← Submitted state expanded: toggle + review component;
+                                          Select All/Clear All tags; Start from # (sequential)
         ExamList.razor                 ← "View all →" link on each profile card
       Questions/
         ListQuestions.razor            ← pagination (25/page)
@@ -373,7 +376,34 @@ tests/
 
 ---
 
-### Phase 6: Tests (#71)
+### Phase 6: Exam Config UI Improvements (#72)
+
+**Changes — Select All / Clear All:**
+- Add two small text links next to the "Topic tags" label in `ExamSession.razor`: **Select all** and **Clear all**.
+- `SelectAllTags()` → `_selectedTags = [.._allTags]`.
+- `ClearAllTags()` → `_selectedTags.Clear()`.
+- No state change needed — `_selectedTags` and `MatchingCount` already react correctly; the existing "no questions match" alert handles the empty-selection case.
+
+**Changes — Start from # (sequential mode only):**
+- Add `private int _startFrom = 1` field.
+- Add a "Start from #" number input that renders only when `!_randomOrder`, below the question-count input.
+  - `min=1`, `max=@MatchingCount`, bound to `_startFrom`.
+  - Reset to `1` whenever `_randomOrder` is toggled to `true`.
+- Update the sequential branch of `BuildQuestionPool()` to apply `.Skip(_startFrom - 1)` before `.Take(take)`:  
+  ```csharp
+  pool.OrderBy(q => q.TopicTag).ThenBy(q => q.Id)
+      .Skip(_startFrom - 1)
+      .Take(take)
+      .ToList()
+  ```
+- Clamp `_startFrom` to `[1, MatchingCount]` in `OnStartFromChanged()` to prevent out-of-range values.
+- The "N matching questions available" helper text updates to show how many remain after the skip: `MatchingCount - (_startFrom - 1)` available from that position.
+
+**Definition of Done:** Select All / Clear All toggle all tag checkboxes; Start from # is hidden in random mode, visible and functional in sequential mode; skipping past the end of the pool starts an empty session (blocked by `MatchingCount == 0` alert).
+
+---
+
+### Phase 7: Tests (#71)
 
 **Changes:**
 - `ExamAttemptAnswerTests.cs` — unit tests for `SelectedOptionIndices`
