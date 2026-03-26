@@ -82,7 +82,7 @@ else
                     <td>@q.Type</td>
                     <td>@q.Difficulty</td>
                     <td>@q.Options.Count</td>
-                    <td>@string.Join(", ", q.CorrectOptionIndices.Select(i => q.Options[i]))</td>
+                    <td>@string.Join(", ", q.CorrectOptionIndices.Select(i => q.Type == QuestionType.Matching ? q.MatchingTargets![i] : q.Options[i]))</td>
                     <td>
                         <a href="/questions/@q.Id/edit" class="btn btn-sm btn-outline-primary me-1">Edit</a>
                         <button type="button" class="btn btn-sm btn-outline-danger"
