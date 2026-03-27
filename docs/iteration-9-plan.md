@@ -315,7 +315,7 @@ tests/
 
 ---
 
-### Phase 1: Schema Extension (#66)
+### Phase 1: Schema Extension (#73)
 
 **Changes:**
 - Add `SelectedOptionIndices` (`IReadOnlyList<int>?`) to `ExamAttemptAnswer` domain class.
@@ -327,7 +327,7 @@ tests/
 
 ---
 
-### Phase 2: Shared Review Component + Submitted State (#67)
+### Phase 2: Shared Review Component + Submitted State (#72)
 
 **Changes:**
 - Create `Components/AttemptReview.razor` accepting `List<ReviewRow>`.
@@ -340,7 +340,7 @@ tests/
 
 ---
 
-### Phase 3: Attempt Review Page (#68)
+### Phase 3: Attempt Review Page (#74)
 
 **Changes:**
 - Create `Features/Attempts/AttemptReview.razor` at `/attempts/{AttemptId:guid}`.
@@ -352,7 +352,7 @@ tests/
 
 ---
 
-### Phase 4: History Page (#69)
+### Phase 4: History Page (#75)
 
 **Changes:**
 - Create `Features/Attempts/History.razor` at `/history`.
@@ -364,7 +364,7 @@ tests/
 
 ---
 
-### Phase 5: Question List Pagination (#70)
+### Phase 5: Question List Pagination (#77)
 
 **Changes:**
 - Add `_page`, `_totalCount`, `PageSize = 25` state to `ListQuestions.razor`.
@@ -376,7 +376,7 @@ tests/
 
 ---
 
-### Phase 6: Exam Config UI Improvements (#72)
+### Phase 6: Exam Config UI Improvements (#76)
 
 **Changes — Select All / Clear All:**
 - Add two small text links next to the "Topic tags" label in `ExamSession.razor`: **Select all** and **Clear all**.
@@ -403,7 +403,7 @@ tests/
 
 ---
 
-### Phase 7: Tests (#71)
+### Phase 7: Tests (#78)
 
 **Changes:**
 - `ExamAttemptAnswerTests.cs` — unit tests for `SelectedOptionIndices`
