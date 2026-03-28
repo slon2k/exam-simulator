@@ -642,12 +642,25 @@ else if (_state == SessionState.Submitted)
     }
 
     private List<ReviewRow> BuildReviewRows() =>
-        _questions.Select((q, i) => new ReviewRow(
-            Number: i + 1,
-            Question: q,
-            IsCorrect: _scoredResults[q.Id],
-            SelectedIndices: _answers.TryGetValue(q.Id, out var sel) ? sel : null
-        )).ToList();
+        _questions.Select((q, i) =>
+        {
+            IReadOnlyList<int>? indices = null;
+            if (_answers.TryGetValue(q.Id, out var sel))
+            {
+                if (q.Type == QuestionType.Matching && q.MatchingTargets is not null)
+                {
+                    var shuffled = _matchingShuffled.TryGetValue(q.Id, out var sh) ? sh : q.MatchingTargets.ToList();
+                    indices = sel
+                        .Select(idx => idx >= 0 ? q.MatchingTargets.ToList().IndexOf(shuffled[idx]) : -1)
+                        .ToList();
+                }
+                else
+                {
+                    indices = sel;
+                }
+            }
+            return new ReviewRow(Number: i + 1, Question: q, IsCorrect: _scoredResults[q.Id], SelectedIndices: indices);
+        }).ToList();
 
     private bool ScoreMatching(Question q, List<int> userSel)
     {
