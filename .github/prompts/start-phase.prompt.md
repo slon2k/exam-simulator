@@ -87,3 +87,14 @@ Output a PR summary in Markdown using the repository's PR template as a guide:
 ```
 
 Fill in actual test counts and specifics from the build/test output.
+
+### Step 8 — Create pull request
+
+Use the `create_pull_request` tool (GitHub MCP) to open the PR:
+
+- **owner**: `slon2k`
+- **repo**: `exam-simulator`
+- **head**: `${{ input:branch }}`
+- **base**: `main`
+- **title**: same as the commit message from Step 6
+- **body**: the PR summary generated in Step 7
