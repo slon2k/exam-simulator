@@ -119,10 +119,10 @@ public sealed class QuestionImportValidator
         if (item.MatchingTargets.Any(string.IsNullOrWhiteSpace))
             errors.Add("Matching: each matching target must contain text.");
 
-        if (item.CorrectOptionIndices is null || item.CorrectOptionIndices.Count != item.Options.Count)
+        if (item.CorrectOptionIndices is null || item.CorrectOptionIndices.Count != item.Options!.Count)
             errors.Add("Matching: correctOptionIndices must have one pairing index per premise.");
 
-        if (item.CorrectOptionIndices is not null && item.CorrectOptionIndices.Any(i => i < 0 || i >= item.MatchingTargets.Count))
+        if (item.CorrectOptionIndices is not null && item.CorrectOptionIndices.Any(i => i < 0 || i >= item.MatchingTargets!.Count))
             errors.Add("Matching: all pairing indices must be within the matchingTargets range.");
     }
 
