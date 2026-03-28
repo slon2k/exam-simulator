@@ -379,7 +379,7 @@
                 correctIndices = _model.SelectedIndices.Order();
 
             var question = new Question(
-                Guid.NewGuid(),
+                Guid.CreateVersion7(),
                 _model.ExamProfileId,
                 _model.Type,
                 _model.Difficulty,

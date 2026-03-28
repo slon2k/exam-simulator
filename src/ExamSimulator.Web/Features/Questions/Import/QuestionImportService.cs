@@ -102,7 +102,7 @@ public sealed class QuestionImportService(
         var toInsert = preview.Items
             .Where(i => i.Status == ImportItemStatus.Valid)
             .Select(i => new Question(
-                i.Item.Id ?? Guid.NewGuid(),
+                i.Item.Id ?? Guid.CreateVersion7(),
                 preview.ExamProfileId,
                 i.Item.Type,
                 i.Item.Difficulty,

@@ -167,7 +167,7 @@ else
             query = query.Where(q => q.Difficulty == diff);
         _totalCount = await query.CountAsync();
         _questions = await query
-            .OrderBy(q => q.ExamProfileId).ThenBy(q => q.TopicTag).ThenBy(q => q.Id)
+            .OrderBy(q => q.Id)
             .Skip((_page - 1) * PageSize)
             .Take(PageSize)
             .ToListAsync();
