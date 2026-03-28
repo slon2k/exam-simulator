@@ -466,7 +466,7 @@ else if (_state == SessionState.Submitted)
         int take = Math.Min(_requestedCount, pool.Count);
         _questions = _randomOrder
             ? pool.OrderBy(_ => Random.Shared.Next()).Take(take).ToList()
-            : pool.OrderBy(q => q.TopicTag).ThenBy(q => q.Id).Skip(_startFrom - 1).Take(take).ToList();
+            : pool.OrderBy(q => q.Id).Skip(_startFrom - 1).Take(take).ToList();
 
         if (take < _requestedCount)
         {
