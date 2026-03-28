@@ -316,127 +316,14 @@ else if (_state == SessionState.Submitted)
         </div>
     </div>
 
-    <h4 class="mt-4">Review</h4>
-
-    @for (int qi = 0; qi < _questions.Count; qi++)
-    {
-        var q = _questions[qi];
-        var userSel = _answers.TryGetValue(q.Id, out var s) ? s : new List<int>();
-        var correct = new HashSet<int>(q.CorrectOptionIndices);
-        var userSet = new HashSet<int>(userSel);
-        var isCorrect = (q.Type == QuestionType.Ordering || q.Type == QuestionType.BuildList)
-            ? q.CorrectOptionIndices.SequenceEqual(userSel)
-            : q.Type == QuestionType.Matching
-                ? ScoreMatching(q, userSel)
-                : correct.SetEquals(userSet);
-
-        <div class="card mb-3 border-@(isCorrect ? "success" : "danger")">
-            <div class="card-header bg-@(isCorrect ? "success" : "danger") text-white">
-                Q@(qi + 1): @(isCorrect ? "Correct" : "Incorrect")
-            </div>
-            <div class="card-body">
-                <div class="fw-bold"><MarkdownText Value="@q.Prompt" /></div>
-                <ul class="list-unstyled">
-                    @if (q.Type == QuestionType.Ordering)
-                    {
-                        var userOrder = _answers.TryGetValue(q.Id, out var ord) ? ord : Enumerable.Range(0, q.Options.Count).ToList();
-                        @for (int oi = 0; oi < q.Options.Count; oi++)
-                        {
-                            var pos = oi;
-                            var displayedOptionIdx = userOrder[pos];
-                            var correctAtPos = q.CorrectOptionIndices[pos];
-                            var placedCorrectly = displayedOptionIdx == correctAtPos;
-                            <li class="@(placedCorrectly ? "text-success fw-semibold" : "text-danger")">
-                                @(pos + 1). @q.Options[displayedOptionIdx]
-                                @if (placedCorrectly) { <span class="ms-1">✓</span> }
-                                else { <span class="ms-1 text-muted fst-italic">(expected: @q.Options[correctAtPos])</span> }
-                            </li>
-                        }
-                    }
-                    else if (q.Type == QuestionType.BuildList)
-                    {
-                        var buildListReview = _answers.TryGetValue(q.Id, out var bl) ? bl : new List<int>();
-                        @if (buildListReview.Count == 0)
-                        {
-                            <li class="text-danger">No answer provided.</li>
-                        }
-                        @for (int oi = 0; oi < buildListReview.Count; oi++)
-                        {
-                            var pos = oi;
-                            var userOptIdx = buildListReview[pos];
-                            var correctAtPos = pos < q.CorrectOptionIndices.Count ? (int?)q.CorrectOptionIndices[pos] : null;
-                            var placedCorrectly = correctAtPos.HasValue && correctAtPos.Value == userOptIdx;
-                            <li class="@(placedCorrectly ? "text-success fw-semibold" : "text-danger")">
-                                @(pos + 1). @q.Options[userOptIdx]
-                                @if (placedCorrectly) { <span class="ms-1">✓</span> }
-                                else if (correctAtPos.HasValue) { <span class="ms-1 text-muted fst-italic">(expected: @q.Options[correctAtPos.Value])</span> }
-                                else { <span class="ms-1 text-muted fst-italic">(not in correct answer)</span> }
-                            </li>
-                        }
-                        @if (buildListReview.Count < q.CorrectOptionIndices.Count)
-                        {
-                            @for (int oi = buildListReview.Count; oi < q.CorrectOptionIndices.Count; oi++)
-                            {
-                                var pos = oi;
-                                var correctOptIdx = q.CorrectOptionIndices[pos];
-                                <li class="text-danger fst-italic">@(pos + 1). (missing: @q.Options[correctOptIdx])</li>
-                            }
-                        }
-                    }
-                    else if (q.Type == QuestionType.Matching)
-                    {
-                        var matchReview = _answers.TryGetValue(q.Id, out var mr) ? mr : Enumerable.Repeat(-1, q.Options.Count).ToList();
-                        var targets = q.MatchingTargets ?? [];
-                        var shuffled = _matchingShuffled.TryGetValue(q.Id, out var st) ? st : targets.ToList();
-                        @for (int oi = 0; oi < q.Options.Count; oi++)
-                        {
-                            var pIdx = oi;
-                            var userShuffledIdx = pIdx < matchReview.Count ? matchReview[pIdx] : -1;
-                            var correctTargetText = targets[q.CorrectOptionIndices[pIdx]];
-                            var userTargetText = userShuffledIdx >= 0 && userShuffledIdx < shuffled.Count ? shuffled[userShuffledIdx] : null;
-                            var pairCorrect = userTargetText == correctTargetText;
-                            <li class="@(pairCorrect ? "text-success fw-semibold" : "text-danger")">
-                                @q.Options[pIdx] →
-                                @if (userTargetText is not null)
-                                {
-                                    <span>@userTargetText</span>
-                                }
-                                else
-                                {
-                                    <span class="fst-italic text-muted">(no answer)</span>
-                                }
-                                @if (pairCorrect) { <span class="ms-1">✓</span> }
-                                else { <span class="ms-1 text-muted fst-italic">(correct: @correctTargetText)</span> }
-                            </li>
-                        }
-                    }
-                    else
-                    {
-                        @for (int oi = 0; oi < q.Options.Count; oi++)
-                        {
-                            var optIdx = oi;
-                            var wasSelected = userSet.Contains(optIdx);
-                            var isCorrectOpt = correct.Contains(optIdx);
-
-                            <li class="@(isCorrectOpt ? "text-success fw-semibold" : wasSelected ? "text-danger text-decoration-line-through" : "")">
-                                @(wasSelected ? "☑" : "☐") @q.Options[optIdx]
-                                @if (isCorrectOpt) { <span class="ms-1">✓</span> }
-                            </li>
-                        }
-                    }
-                </ul>
-                @if (q.Explanation is not null)
-                {
-                    <div class="text-muted mt-2 fst-italic"><MarkdownText Value="@q.Explanation" /></div>
-                }
-            </div>
-        </div>
-    }
-
-    <div class="mt-3">
+    <div class="mt-3 mb-4">
         <button class="btn btn-primary me-2" @onclick="ConfirmReconfigure">Retake</button>
+        <a href="/history?profileId=@ProfileId" class="btn btn-outline-secondary me-2">View history →</a>
         <a href="/exams" class="btn btn-outline-secondary">Back to Exams</a>
     </div>
+
+    <h4 class="mt-4">Review</h4>
+    <AttemptReview Rows="_reviewRows" />
 }
 
 @code {
@@ -451,6 +338,8 @@ else if (_state == SessionState.Submitted)
     private readonly Dictionary<Guid, List<int>> _answers = new();
     private readonly Dictionary<Guid, List<string>> _matchingShuffled = new();
     private int _score;
+    private Dictionary<Guid, bool> _scoredResults = [];
+    private List<ReviewRow> _reviewRows = [];
 
     // --- Config state ---
     private record TagDifficultyCount(string Tag, Difficulty Difficulty, int Count);
@@ -653,6 +542,8 @@ else if (_state == SessionState.Submitted)
             if (isCorrect) _score++;
             questionResults.Add((q.Id, isCorrect));
         }
+        _scoredResults = questionResults.ToDictionary(r => r.QuestionId, r => r.IsCorrect);
+        _reviewRows = BuildReviewRows();
         _state = SessionState.Submitted;
 
         // Persist attempt — best-effort, do not block review on failure
@@ -674,10 +565,9 @@ else if (_state == SessionState.Submitted)
                     _selectedDifficulties.Select(d => d.ToString()),
                     _randomOrder);
                 DbContext.ExamAttempts.Add(attempt);
-                var isCorrectLookup = questionResults.ToDictionary(r => r.QuestionId, r => r.IsCorrect);
                 foreach (var q in _questions)
                 {
-                    var isCorrect = isCorrectLookup[q.Id];
+                    var isCorrect = _scoredResults[q.Id];
                     IReadOnlyList<int>? selectedOptionIndices = null;
                     if (_answers.TryGetValue(q.Id, out var sel))
                     {
@@ -704,6 +594,14 @@ else if (_state == SessionState.Submitted)
             Logger.LogError(ex, "Failed to persist exam attempt for profile {ProfileId}", ProfileId);
         }
     }
+
+    private List<ReviewRow> BuildReviewRows() =>
+        _questions.Select((q, i) => new ReviewRow(
+            Number: i + 1,
+            Question: q,
+            IsCorrect: _scoredResults[q.Id],
+            SelectedIndices: _answers.TryGetValue(q.Id, out var sel) ? sel : null
+        )).ToList();
 
     private bool ScoreMatching(Question q, List<int> userSel)
     {

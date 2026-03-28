@@ -1,0 +1,137 @@
+@using ExamSimulator.Web.Domain.Questions
+
+@foreach (var row in Rows)
+{
+    if (row.Question is null)
+    {
+        <div class="card mb-3 border-secondary">
+            <div class="card-header bg-secondary text-white">
+                Q@(row.Number): @(row.IsCorrect ? "Correct" : "Incorrect") — <span class="fst-italic">Question removed</span>
+            </div>
+            <div class="card-body text-muted fst-italic">
+                This question has been removed.
+            </div>
+        </div>
+        continue;
+    }
+
+    var q = row.Question;
+    var userSel = row.SelectedIndices?.ToList() ?? new List<int>();
+    var correct = new HashSet<int>(q.CorrectOptionIndices);
+    var userSet = new HashSet<int>(userSel);
+    var isCorrect = row.IsCorrect;
+
+    <div class="card mb-3 border-@(isCorrect ? "success" : "danger")">
+        <div class="card-header bg-@(isCorrect ? "success" : "danger") text-white">
+            Q@(row.Number): @(isCorrect ? "Correct" : "Incorrect")
+        </div>
+        <div class="card-body">
+            <div class="fw-bold"><MarkdownText Value="@q.Prompt" /></div>
+
+            @if (row.SelectedIndices is null)
+            {
+                <p class="text-muted fst-italic small mt-2">Answer details not available for this attempt.</p>
+            }
+
+            <ul class="list-unstyled">
+                @if (q.Type == QuestionType.Ordering)
+                {
+                    var userOrder = userSel.Count == q.Options.Count
+                        ? userSel
+                        : Enumerable.Range(0, q.Options.Count).ToList();
+                    @for (int oi = 0; oi < q.Options.Count; oi++)
+                    {
+                        var pos = oi;
+                        var displayedOptionIdx = userOrder[pos];
+                        var correctAtPos = q.CorrectOptionIndices[pos];
+                        var placedCorrectly = displayedOptionIdx == correctAtPos;
+                        <li class="@(placedCorrectly ? "text-success fw-semibold" : "text-danger")">
+                            @(pos + 1). @q.Options[displayedOptionIdx]
+                            @if (placedCorrectly) { <span class="ms-1">✓</span> }
+                            else { <span class="ms-1 text-muted fst-italic">(expected: @q.Options[correctAtPos])</span> }
+                        </li>
+                    }
+                }
+                else if (q.Type == QuestionType.BuildList)
+                {
+                    @if (userSel.Count == 0)
+                    {
+                        <li class="text-danger">No answer provided.</li>
+                    }
+                    @for (int oi = 0; oi < userSel.Count; oi++)
+                    {
+                        var pos = oi;
+                        var userOptIdx = userSel[pos];
+                        var correctAtPos = pos < q.CorrectOptionIndices.Count ? (int?)q.CorrectOptionIndices[pos] : null;
+                        var placedCorrectly = correctAtPos.HasValue && correctAtPos.Value == userOptIdx;
+                        <li class="@(placedCorrectly ? "text-success fw-semibold" : "text-danger")">
+                            @(pos + 1). @q.Options[userOptIdx]
+                            @if (placedCorrectly) { <span class="ms-1">✓</span> }
+                            else if (correctAtPos.HasValue) { <span class="ms-1 text-muted fst-italic">(expected: @q.Options[correctAtPos.Value])</span> }
+                            else { <span class="ms-1 text-muted fst-italic">(not in correct answer)</span> }
+                        </li>
+                    }
+                    @if (userSel.Count < q.CorrectOptionIndices.Count)
+                    {
+                        @for (int oi = userSel.Count; oi < q.CorrectOptionIndices.Count; oi++)
+                        {
+                            var pos = oi;
+                            var correctOptIdx = q.CorrectOptionIndices[pos];
+                            <li class="text-danger fst-italic">@(pos + 1). (missing: @q.Options[correctOptIdx])</li>
+                        }
+                    }
+                }
+                else if (q.Type == QuestionType.Matching)
+                {
+                    var targets = q.MatchingTargets ?? [];
+                    @for (int oi = 0; oi < q.Options.Count; oi++)
+                    {
+                        var pIdx = oi;
+                        var correctTargetText = targets[q.CorrectOptionIndices[pIdx]];
+                        // SelectedIndices for Matching are already canonical (normalised in Submit)
+                        var userCanonicalIdx = pIdx < userSel.Count ? userSel[pIdx] : -1;
+                        var userTargetText = userCanonicalIdx >= 0 && userCanonicalIdx < targets.Count
+                            ? targets[userCanonicalIdx]
+                            : null;
+                        var pairCorrect = userTargetText == correctTargetText;
+                        <li class="@(pairCorrect ? "text-success fw-semibold" : "text-danger")">
+                            @q.Options[pIdx] →
+                            @if (userTargetText is not null)
+                            {
+                                <span>@userTargetText</span>
+                            }
+                            else
+                            {
+                                <span class="fst-italic text-muted">(no answer)</span>
+                            }
+                            @if (pairCorrect) { <span class="ms-1">✓</span> }
+                            else { <span class="ms-1 text-muted fst-italic">(correct: @correctTargetText)</span> }
+                        </li>
+                    }
+                }
+                else
+                {
+                    @for (int oi = 0; oi < q.Options.Count; oi++)
+                    {
+                        var optIdx = oi;
+                        var wasSelected = userSet.Contains(optIdx);
+                        var isCorrectOpt = correct.Contains(optIdx);
+
+                        <li class="@(isCorrectOpt ? "text-success fw-semibold" : wasSelected ? "text-danger text-decoration-line-through" : "")">
+                            @(wasSelected ? "☑" : "☐") @q.Options[optIdx]
+                            @if (isCorrectOpt) { <span class="ms-1">✓</span> }
+                        </li>
+                    }
+                }
+            </ul>
+            @if (q.Explanation is not null)
+            {
+                <div class="text-muted mt-2 fst-italic"><MarkdownText Value="@q.Explanation" /></div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public required List<ReviewRow> Rows { get; set; }
+}
