@@ -30,7 +30,7 @@
     </div>
     <div class="col-md-4">
         <label class="form-label">Topic Tag</label>
-        <select class="form-select" @bind="_selectedTag" @bind:after="ApplyFilters">
+        <select class="form-select" @bind="_selectedTag" @bind:after="OnTagChanged">
             <option value="">All tags</option>
             @foreach (var t in _availableTags)
             {
@@ -40,7 +40,7 @@
     </div>
     <div class="col-md-4">
         <label class="form-label">Difficulty</label>
-        <select class="form-select" @bind="_selectedDifficulty" @bind:after="ApplyFilters">
+        <select class="form-select" @bind="_selectedDifficulty" @bind:after="OnDifficultyChanged">
             <option value="">All</option>
             <option value="Easy">Easy</option>
             <option value="Medium">Medium</option>
@@ -59,6 +59,7 @@ else if (_questions.Count == 0)
 }
 else
 {
+    <p class="text-muted">Showing @((_page - 1) * PageSize + 1)–@(Math.Min(_page * PageSize, _totalCount)) of @_totalCount</p>
     <table class="table table-striped">
         <thead>
             <tr>
@@ -92,6 +93,12 @@ else
             }
         </tbody>
     </table>
+
+    <div class="d-flex align-items-center gap-3 mt-2">
+        <button class="btn btn-outline-secondary btn-sm" @onclick="() => ChangePage(-1)" disabled="@(_page <= 1)">← Previous</button>
+        <span>Page @_page of @TotalPages</span>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="() => ChangePage(1)" disabled="@(_page >= TotalPages)">Next →</button>
+    </div>
 }
 
 @code {
@@ -102,6 +109,11 @@ else
     private string _selectedProfileId = "";
     private string _selectedTag = "";
     private string _selectedDifficulty = "";
+    private int _page = 1;
+    private int _totalCount;
+    private const int PageSize = 25;
+
+    private int TotalPages => _totalCount == 0 ? 1 : (int)Math.Ceiling(_totalCount / (double)PageSize);
 
     protected override async Task OnInitializedAsync()
     {
@@ -115,7 +127,20 @@ else
     {
         _selectedProfileId = e.Value?.ToString() ?? "";
         _selectedTag = "";
+        _page = 1;
         await RefreshTags();
+        await ApplyFilters();
+    }
+
+    private async Task OnTagChanged()
+    {
+        _page = 1;
+        await ApplyFilters();
+    }
+
+    private async Task OnDifficultyChanged()
+    {
+        _page = 1;
         await ApplyFilters();
     }
 
@@ -140,7 +165,18 @@ else
             query = query.Where(q => q.TopicTag == _selectedTag);
         if (!string.IsNullOrEmpty(_selectedDifficulty) && Enum.TryParse<Difficulty>(_selectedDifficulty, out var diff))
             query = query.Where(q => q.Difficulty == diff);
-        _questions = await query.OrderBy(q => q.ExamProfileId).ThenBy(q => q.TopicTag).ThenBy(q => q.Id).ToListAsync();
+        _totalCount = await query.CountAsync();
+        _questions = await query
+            .OrderBy(q => q.ExamProfileId).ThenBy(q => q.TopicTag).ThenBy(q => q.Id)
+            .Skip((_page - 1) * PageSize)
+            .Take(PageSize)
+            .ToListAsync();
+    }
+
+    private async Task ChangePage(int delta)
+    {
+        _page = Math.Clamp(_page + delta, 1, TotalPages);
+        await ApplyFilters();
     }
 
     private async Task DeleteQuestion(Question question)
