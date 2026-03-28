@@ -25,7 +25,11 @@ Locate the section for **Phase ${{ input:phase }}** and extract:
 
 ### Step 2 — Create the branch
 
+Ensure you are on the latest `main` before branching:
+
 ```
+git checkout main
+git pull
 git checkout -b ${{ input:branch }}
 ```
 
