@@ -1,0 +1,107 @@
+@page "/attempts/{AttemptId:guid}"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using ExamSimulator.Web.Domain.Attempts
+@using ExamSimulator.Web.Domain.ExamProfiles
+@using ExamSimulator.Web.Domain.Questions
+@using ExamSimulator.Web.Infrastructure
+
+@inject ExamSimulatorDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
+
+<PageTitle>Attempt Review</PageTitle>
+
+@if (_notFound)
+{
+    <h1>Attempt not found</h1>
+    <p class="text-muted">The attempt you are looking for does not exist or belongs to another user.</p>
+    <a href="/history" class="btn btn-outline-secondary">← Back to history</a>
+}
+else if (_rows is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <a href="/history?profileId=@_attempt!.ProfileId" class="btn btn-link ps-0 mb-3">← Back to history</a>
+
+    <h1>@_profileName — @_attempt!.TakenAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")</h1>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            @{
+                var pct = _attempt.Total > 0 ? _attempt.Score * 100 / _attempt.Total : 0;
+                var badgeClass = pct >= 70 ? "bg-success" : pct >= 50 ? "bg-warning text-dark" : "bg-danger";
+            }
+            <h2 class="display-4">@_attempt.Score / @_attempt.Total</h2>
+            <p class="lead">
+                <span class="badge @badgeClass">@pct%</span>
+            </p>
+            <p class="text-muted mb-0">
+                Tags: @(string.Join(", ", _attempt.Tags))
+                &nbsp;·&nbsp;
+                Difficulty: @(string.Join(", ", _attempt.Difficulties))
+                &nbsp;·&nbsp;
+                @(_attempt.RandomOrder ? "Random order" : "Sequential order")
+            </p>
+        </div>
+    </div>
+
+    <h4>Review</h4>
+    <AttemptReview Rows="_rows" />
+}
+
+@code {
+    [Parameter] public Guid AttemptId { get; set; }
+
+    private bool _notFound;
+    private ExamAttempt? _attempt;
+    private string _profileName = string.Empty;
+    private List<ReviewRow>? _rows;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId is null)
+        {
+            _notFound = true;
+            return;
+        }
+
+        _attempt = await DbContext.ExamAttempts
+            .Include(a => a.Answers)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == AttemptId && a.UserId == userId);
+
+        if (_attempt is null)
+        {
+            _notFound = true;
+            return;
+        }
+
+        var profile = await DbContext.ExamProfiles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == _attempt.ProfileId);
+        _profileName = profile?.Name ?? _attempt.ProfileId;
+
+        var questionIds = _attempt.Answers.Select(a => a.QuestionId).ToList();
+        var questions = await DbContext.Questions
+            .AsNoTracking()
+            .Where(q => questionIds.Contains(q.Id))
+            .ToDictionaryAsync(q => q.Id);
+
+        _rows = _attempt.Answers
+            .Select((a, i) => new ReviewRow(
+                Number: i + 1,
+                Question: questions.TryGetValue(a.QuestionId, out var q) ? q : null,
+                IsCorrect: a.IsCorrect,
+                SelectedIndices: a.SelectedOptionIndices))
+            .ToList();
+    }
+}
