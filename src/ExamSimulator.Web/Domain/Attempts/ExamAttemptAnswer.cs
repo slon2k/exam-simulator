@@ -10,9 +10,11 @@ public sealed class ExamAttemptAnswer
 
     public bool IsCorrect { get; private set; }
 
+    public IReadOnlyList<int>? SelectedOptionIndices { get; private set; }
+
     private ExamAttemptAnswer() { } // for EF Core
 
-    public ExamAttemptAnswer(Guid id, Guid attemptId, Guid questionId, bool isCorrect)
+    public ExamAttemptAnswer(Guid id, Guid attemptId, Guid questionId, bool isCorrect, IReadOnlyList<int>? selectedOptionIndices = null)
     {
         if (id == Guid.Empty)
             throw new ArgumentException("Answer id cannot be empty.", nameof(id));
@@ -27,5 +29,6 @@ public sealed class ExamAttemptAnswer
         AttemptId = attemptId;
         QuestionId = questionId;
         IsCorrect = isCorrect;
+        SelectedOptionIndices = selectedOptionIndices;
     }
 }

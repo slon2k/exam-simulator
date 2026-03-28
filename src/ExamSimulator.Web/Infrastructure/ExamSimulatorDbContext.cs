@@ -112,6 +112,15 @@ public class ExamSimulatorDbContext(DbContextOptions<ExamSimulatorDbContext> opt
             entity.Property(a => a.AttemptId).IsRequired();
             entity.Property(a => a.QuestionId).IsRequired();
             entity.Property(a => a.IsCorrect).IsRequired();
+            entity.Property(a => a.SelectedOptionIndices)
+                .IsRequired(false)
+                .HasConversion(
+                    indices => indices == null ? null : System.Text.Json.JsonSerializer.Serialize(indices, (System.Text.Json.JsonSerializerOptions?)null),
+                    json => json == null ? null : System.Text.Json.JsonSerializer.Deserialize<List<int>>(json, (System.Text.Json.JsonSerializerOptions?)null)!)
+                .Metadata.SetValueComparer(new ValueComparer<IReadOnlyList<int>?>(
+                    (a, b) => (a == null && b == null) || (a != null && b != null && a.SequenceEqual(b)),
+                    indices => indices == null ? 0 : indices.Aggregate(0, (hash, item) => HashCode.Combine(hash, item.GetHashCode())),
+                    indices => indices == null ? null : (IReadOnlyList<int>)indices.ToList()));
             // QuestionId is a plain column — no FK constraint so answers survive question deletion
         });
     }

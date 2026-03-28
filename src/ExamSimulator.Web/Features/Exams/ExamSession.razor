@@ -674,8 +674,27 @@ else if (_state == SessionState.Submitted)
                     _selectedDifficulties.Select(d => d.ToString()),
                     _randomOrder);
                 DbContext.ExamAttempts.Add(attempt);
-                foreach (var (questionId, isCorrect) in questionResults)
-                    DbContext.ExamAttemptAnswers.Add(new ExamAttemptAnswer(Guid.NewGuid(), attemptId, questionId, isCorrect));
+                var isCorrectLookup = questionResults.ToDictionary(r => r.QuestionId, r => r.IsCorrect);
+                foreach (var q in _questions)
+                {
+                    var isCorrect = isCorrectLookup[q.Id];
+                    IReadOnlyList<int>? selectedOptionIndices = null;
+                    if (_answers.TryGetValue(q.Id, out var sel))
+                    {
+                        if (q.Type == QuestionType.Matching && q.MatchingTargets is not null)
+                        {
+                            var shuffled = _matchingShuffled.TryGetValue(q.Id, out var sh) ? sh : q.MatchingTargets.ToList();
+                            selectedOptionIndices = sel
+                                .Select(i => i >= 0 ? q.MatchingTargets.ToList().IndexOf(shuffled[i]) : -1)
+                                .ToList();
+                        }
+                        else
+                        {
+                            selectedOptionIndices = sel;
+                        }
+                    }
+                    DbContext.ExamAttemptAnswers.Add(new ExamAttemptAnswer(Guid.NewGuid(), attemptId, q.Id, isCorrect, selectedOptionIndices));
+                }
                 await DbContext.SaveChangesAsync();
                 _lastAttemptId = attemptId;
             }
