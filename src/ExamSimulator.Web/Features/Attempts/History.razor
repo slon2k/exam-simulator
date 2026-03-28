@@ -1,0 +1,107 @@
+@page "/history"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using ExamSimulator.Web.Domain.Attempts
+@using ExamSimulator.Web.Domain.ExamProfiles
+@using ExamSimulator.Web.Infrastructure
+
+@inject ExamSimulatorDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Nav
+
+<PageTitle>Exam History</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">My Exam History</h1>
+    <select class="form-select w-auto" value="@ProfileId" @onchange="OnProfileChanged">
+        <option value="">All profiles</option>
+        @foreach (var (id, name) in _profiles)
+        {
+            <option value="@id">@name</option>
+        }
+    </select>
+</div>
+
+@if (_attempts is null)
+{
+    <p>Loading...</p>
+}
+else if (_attempts.Count == 0)
+{
+    <p class="text-muted">No attempts found.</p>
+}
+else
+{
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Profile</th>
+                <th>Date</th>
+                <th>Score</th>
+                <th>Tags</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var attempt in _attempts)
+            {
+                var pct = attempt.Total > 0 ? attempt.Score * 100 / attempt.Total : 0;
+                var badgeClass = pct >= 70 ? "bg-success" : pct >= 50 ? "bg-warning text-dark" : "bg-danger";
+                <tr>
+                    <td>@(_profiles.TryGetValue(attempt.ProfileId, out var name) ? name : attempt.ProfileId)</td>
+                    <td>@attempt.TakenAt.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
+                    <td>
+                        @attempt.Score / @attempt.Total
+                        <span class="badge @badgeClass ms-1">@pct%</span>
+                    </td>
+                    <td class="text-muted">@(attempt.Tags.Count > 0 ? string.Join(", ", attempt.Tags) : "–")</td>
+                    <td><a href="/attempts/@attempt.Id" class="btn btn-sm btn-outline-secondary">Review</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    [SupplyParameterFromQuery] public string? ProfileId { get; set; }
+
+    private Dictionary<string, string> _profiles = new();
+    private List<ExamAttempt>? _attempts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var userId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId is null) return;
+
+        _profiles = await DbContext.ExamProfiles
+            .AsNoTracking()
+            .OrderBy(p => p.Name)
+            .ToDictionaryAsync(p => p.Id, p => p.Name);
+
+        var query = DbContext.ExamAttempts
+            .AsNoTracking()
+            .Where(a => a.UserId == userId);
+
+        if (!string.IsNullOrEmpty(ProfileId))
+            query = query.Where(a => a.ProfileId == ProfileId);
+
+        _attempts = await query
+            .OrderByDescending(a => a.TakenAt)
+            .ToListAsync();
+    }
+
+    private void OnProfileChanged(ChangeEventArgs e)
+    {
+        var selected = e.Value?.ToString();
+        if (string.IsNullOrEmpty(selected))
+            Nav.NavigateTo("/history");
+        else
+            Nav.NavigateTo($"/history?profileId={selected}");
+    }
+}
